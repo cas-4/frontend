@@ -1,7 +1,6 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const NotFound: React.FC = () => {
+export default function NotFound () {
   const navigate = useNavigate();
 
   const handleGoBackToDashboard = () => {
@@ -15,7 +14,7 @@ const NotFound: React.FC = () => {
         <p className="text-gray-600 mb-6">Oops! The page you're looking for doesn't exist.</p>
         <button
           onClick={handleGoBackToDashboard}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          className="bg-yellow-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded"
         >
           Back to Dashboard
         </button>
@@ -23,5 +22,3 @@ const NotFound: React.FC = () => {
     </div>
   );
 };
-
-export default NotFound;

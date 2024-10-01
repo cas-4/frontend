@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { gql, useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,7 +18,7 @@ interface LoginResponse {
   };
 }
 
-const Login: React.FC = () => {
+export default function Login () {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [login, { loading }] = useMutation<LoginResponse>(LOGIN_MUTATION);
@@ -142,5 +142,3 @@ const Login: React.FC = () => {
     </div>
   );
 };
-
-export default Login;
