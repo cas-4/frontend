@@ -86,7 +86,6 @@ export default function Dashboard() {
     },
   ];
 
-
   const navigation = [
     { name: 'Dashboard', href: '#', current: true },
     { name: 'Team', href: '#', current: false },
@@ -120,16 +119,9 @@ export default function Dashboard() {
     return null;
   }
 
-  // Log to verify the data
-  console.log('Last positions data:', data?.lastPositions);
-  console.log('Selected activities:', selectedActivities);
-
   const filteredPositions = data?.lastPositions.filter((position) =>
     selectedActivities.includes(position.movingActivity)
   );
-
-  // Log to verify the filtered data
-  console.log('Filtered positions:', filteredPositions);
 
   const userName = userData?.user.name || 'User';
   const userInitials = userName.substring(0, 2).toUpperCase();
@@ -221,10 +213,10 @@ export default function Dashboard() {
       </Disclosure>
 
       <div className="relative flex flex-col justify-center items-center flex-grow bg-gray-100">
-        <div className="absolute top-4 right-4 bg-white p-4 rounded shadow-md z-10">
+        <div className="absolute top-4 right-4 bg-white p-4 rounded shadow-md z-50">
           <h2 className="text-xl font-bold mb-4">Filter by Activity</h2>
           <div className="flex space-x-4 flex-wrap">
-            {['IN_VEHICLE','RUNNING','WALKING','STILL'].map((activity) => (
+            {['IN_VEHICLE', 'RUNNING', 'WALKING', 'STILL'].map((activity) => (
               <label key={activity} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -238,7 +230,7 @@ export default function Dashboard() {
         </div>
 
         <div className="h-full w-full">
-          <MapContainer center={position} zoom={14} className="h-full w-full">
+          <MapContainer center={position} zoom={14} className="h-full w-full z-0">
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
