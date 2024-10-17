@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { gql, useQuery } from '@apollo/client';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, LayersControl } from 'react-leaflet';
 import { Icon, LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -62,7 +62,7 @@ export default function Dashboard() {
   const goToLogout = () => {
     navigate('/logout');
   };
-  
+
   const markerIcon = new Icon({
     iconUrl: markerIconSvg,
     iconSize: [30, 30],
@@ -71,9 +71,9 @@ export default function Dashboard() {
 
   const nodeIcon = new Icon({
     iconUrl: nodeSvg,
-    iconSize: [30,30],
+    iconSize: [30, 30],
     className: 'node-icon'
-  })
+  });
 
   const staticMarkers = [
     {
@@ -97,31 +97,11 @@ export default function Dashboard() {
     return classes.filter(Boolean).join(' ');
   }
 
-  const [selectedActivities, setSelectedActivities] = useState<string[]>([
-    'IN_VEHICLE',
-    'RUNNING',
-    'WALKING',
-    'STILL',
-  ]);
-
-  const toggleActivity = (activity: string) => {
-    setSelectedActivities((prev) =>
-      prev.includes(activity)
-        ? prev.filter((a) => a !== activity)
-        : [...prev, activity]
-    );
-  };
-
   if (loading) return <p>Loading...</p>;
   if (error) {
-    console.error("Error loading last positions:", error);
     navigate('/error');
     return null;
   }
-
-  const filteredPositions = data?.lastPositions.filter((position) =>
-    selectedActivities.includes(position.movingActivity)
-  );
 
   const userName = userData?.user.name || 'User';
   const userInitials = userName.substring(0, 2).toUpperCase();
@@ -152,7 +132,7 @@ export default function Dashboard() {
                       aria-current={item.current ? 'page' : undefined}
                       className={classNames(
                         item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                        'rounded-md px-3 py-2 text-sm font-medium',
+                        'rounded-md px-3 py-2 text-sm font-medium'
                       )}
                     >
                       {item.name}
@@ -170,9 +150,7 @@ export default function Dashboard() {
                   </MenuButton>
                 </div>
 
-                <MenuItems
-                  className="absolute right-0 z-10000 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-                >
+                <MenuItems className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <MenuItem>
                     {({ active }) => (
                       <a
@@ -213,42 +191,99 @@ export default function Dashboard() {
       </Disclosure>
 
       <div className="relative flex flex-col justify-center items-center flex-grow bg-gray-100">
-        <div className="absolute top-4 right-4 bg-white p-4 rounded shadow-md z-50">
-          <h2 className="text-xl font-bold mb-4">Filter by Activity</h2>
-          <div className="flex space-x-4 flex-wrap">
-            {['IN_VEHICLE', 'RUNNING', 'WALKING', 'STILL'].map((activity) => (
-              <label key={activity} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={selectedActivities.includes(activity)}
-                  onChange={() => toggleActivity(activity)}
-                />
-                <span>{activity}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         <div className="h-full w-full">
           <MapContainer center={position} zoom={14} className="h-full w-full z-0">
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            {filteredPositions?.map((position) => (
-              <Marker key={position.id} position={[position.latitude, position.longitude]} icon={markerIcon}>
-                <Popup>
-                  {`User ID: ${position.userId}`}<br />
-                  {`Activity: ${position.movingActivity}`}<br />
-                  {`Time: ${new Date(position.createdAt).toLocaleString()}`}
-                </Popup>
-              </Marker>
-            ))}
-            {staticMarkers.map((marker, index) => (
-              <Marker key={index} position={marker.geocode} icon={nodeIcon}>
-                <Popup>{marker.popUp}</Popup>
-              </Marker>
-            ))}
+            <LayersControl position="topright">
+              <LayersControl.Overlay name="IN_VEHICLE">
+                <>
+                  {data?.lastPositions
+                    .filter((position) => position.movingActivity === 'IN_VEHICLE')
+                    .map((position) => (
+                      <Marker
+                        key={position.id}
+                        position={[position.latitude, position.longitude]}
+                        icon={markerIcon}
+                      >
+                        <Popup>
+                          {`User ID: ${position.userId}`}<br />
+                          {`Activity: ${position.movingActivity}`}<br />
+                          {`Time: ${new Date(position.createdAt).toLocaleString()}`}
+                        </Popup>
+                      </Marker>
+                    ))}
+                </>
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay name="RUNNING">
+                <>
+                  {data?.lastPositions
+                    .filter((position) => position.movingActivity === 'RUNNING')
+                    .map((position) => (
+                      <Marker
+                        key={position.id}
+                        position={[position.latitude, position.longitude]}
+                        icon={markerIcon}
+                      >
+                        <Popup>
+                          {`User ID: ${position.userId}`}<br />
+                          {`Activity: ${position.movingActivity}`}<br />
+                          {`Time: ${new Date(position.createdAt).toLocaleString()}`}
+                        </Popup>
+                      </Marker>
+                    ))}
+                </>
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay name="WALKING">
+                <>
+                  {data?.lastPositions
+                    .filter((position) => position.movingActivity === 'WALKING')
+                    .map((position) => (
+                      <Marker
+                        key={position.id}
+                        position={[position.latitude, position.longitude]}
+                        icon={markerIcon}
+                      >
+                        <Popup>
+                          {`User ID: ${position.userId}`}<br />
+                          {`Activity: ${position.movingActivity}`}<br />
+                          {`Time: ${new Date(position.createdAt).toLocaleString()}`}
+                        </Popup>
+                      </Marker>
+                    ))}
+                </>
+              </LayersControl.Overlay>
+
+              <LayersControl.Overlay name="STILL">
+                <>
+                  {data?.lastPositions
+                    .filter((position) => position.movingActivity === 'STILL')
+                    .map((position) => (
+                      <Marker
+                        key={position.id}
+                        position={[position.latitude, position.longitude]}
+                        icon={markerIcon}
+                      >
+                        <Popup>
+                          {`User ID: ${position.userId}`}<br />
+                          {`Activity: ${position.movingActivity}`}<br />
+                          {`Time: ${new Date(position.createdAt).toLocaleString()}`}
+                        </Popup>
+                      </Marker>
+                    ))}
+                </>
+              </LayersControl.Overlay>
+
+              {staticMarkers.map((marker, index) => (
+                <Marker key={index} position={marker.geocode} icon={nodeIcon}>
+                  <Popup>{marker.popUp}</Popup>
+                </Marker>
+              ))}
+            </LayersControl>
           </MapContainer>
         </div>
       </div>
