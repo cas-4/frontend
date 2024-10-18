@@ -62,7 +62,7 @@ export default function Dashboard() {
   const goToLogout = () => {
     navigate('/logout');
   };
-
+  
   const markerIcon = new Icon({
     iconUrl: markerIconSvg,
     iconSize: [30, 30],
@@ -198,7 +198,7 @@ export default function Dashboard() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             <LayersControl position="topright">
-              <LayersControl.Overlay name="IN_VEHICLE">
+              <LayersControl.Overlay name="IN_VEHICLE" checked>
                 <>
                   {data?.lastPositions
                     .filter((position) => position.movingActivity === 'IN_VEHICLE')
@@ -208,17 +208,17 @@ export default function Dashboard() {
                         position={[position.latitude, position.longitude]}
                         icon={markerIcon}
                       >
-                        <Popup>
-                          {`User ID: ${position.userId}`}<br />
-                          {`Activity: ${position.movingActivity}`}<br />
-                          {`Time: ${new Date(position.createdAt).toLocaleString()}`}
-                        </Popup>
-                      </Marker>
-                    ))}
+                    <Popup>
+                      {`User ID: ${position.userId}`}<br />
+                      {`Activity: ${position.movingActivity}`}<br />
+                      {`Time: ${new Date(position.createdAt).toLocaleString()}`}
+                    </Popup>
+                  </Marker>
+                ))}
                 </>
               </LayersControl.Overlay>
 
-              <LayersControl.Overlay name="RUNNING">
+              <LayersControl.Overlay name="RUNNING" checked>
                 <>
                   {data?.lastPositions
                     .filter((position) => position.movingActivity === 'RUNNING')
@@ -238,7 +238,7 @@ export default function Dashboard() {
                 </>
               </LayersControl.Overlay>
 
-              <LayersControl.Overlay name="WALKING">
+              <LayersControl.Overlay name="WALKING" checked>
                 <>
                   {data?.lastPositions
                     .filter((position) => position.movingActivity === 'WALKING')
@@ -258,7 +258,7 @@ export default function Dashboard() {
                 </>
               </LayersControl.Overlay>
 
-              <LayersControl.Overlay name="STILL">
+              <LayersControl.Overlay name="STILL" checked>
                 <>
                   {data?.lastPositions
                     .filter((position) => position.movingActivity === 'STILL')
@@ -279,11 +279,14 @@ export default function Dashboard() {
               </LayersControl.Overlay>
 
               {staticMarkers.map((marker, index) => (
-                <Marker key={index} position={marker.geocode} icon={nodeIcon}>
-                  <Popup>{marker.popUp}</Popup>
-                </Marker>
+                <LayersControl.Overlay key={index} name={marker.popUp} checked>
+                  <Marker position={marker.geocode} icon={nodeIcon}>
+                    <Popup>{marker.popUp}</Popup>
+                  </Marker>
+                </LayersControl.Overlay>
               ))}
             </LayersControl>
+            
           </MapContainer>
         </div>
       </div>
