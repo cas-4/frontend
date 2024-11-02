@@ -63,8 +63,8 @@ export default function Dashboard() {
     { name: 'IN_VEHICLE', show: useState(true) }
   ];
 
-  // List of static markers
   const [showStaticMarkers, setShowStaticMarkers] = useState(true);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const markerIcon = new Icon({
     iconUrl: markerIconSvg,
@@ -111,46 +111,46 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-screen">
       <Disclosure as="nav" className="bg-gray-800 w-full">
-            <div className="mx-auto px-2 sm:px-6 lg:px-8">
-              <div className="relative flex h-16 items-center justify-between">
-                <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                  <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-                    <span className="absolute -inset-0.5" />
-                    <span className="sr-only">Open main menu</span>
-                    <Bars3Icon aria-hidden="true" className="block h-6 w-6" />
-                    <XMarkIcon aria-hidden="true" className="hidden h-6 w-6" />
-                  </DisclosureButton>
+        <div className="mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="relative flex h-16 items-center justify-between">
+            <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+              <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                <span className="absolute -inset-0.5" />
+                <span className="sr-only">Open main menu</span>
+                <Bars3Icon aria-hidden="true" className="block h-6 w-6" />
+                <XMarkIcon aria-hidden="true" className="hidden h-6 w-6" />
+              </DisclosureButton>
+            </div>
+            <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+              <div className="flex flex-shrink-0 items-center">
+                <img alt="CAS" src="./CAS.png" className="h-8 w-auto" />
+              </div>
+              <div className="hidden sm:ml-6 sm:block">
+                <div className="flex space-x-4">
+                  {navigation.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      aria-current={item.current ? 'page' : undefined}
+                      className={classNames(
+                        item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                        'rounded-md px-3 py-2 text-sm font-medium'
+                      )}
+                    >
+                      {item.name}
+                    </a>
+                  ))}
                 </div>
-                <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-                  <div className="flex flex-shrink-0 items-center">
-                    <img alt="CAS" src="./CAS.png" className="h-8 w-auto" />
-                  </div>
-                  <div className="hidden sm:ml-6 sm:block">
-                    <div className="flex space-x-4">
-                      {navigation.map((item) => (
-                        <a
-                          key={item.name}
-                          href={item.href}
-                          aria-current={item.current ? 'page' : undefined}
-                          className={classNames(
-                            item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                            'rounded-md px-3 py-2 text-sm font-medium'
-                          )}
-                        >
-                          {item.name}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+              </div>
+            </div>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                     <Menu as="div" className="relative ml-3">
                     <div>
                       <MenuButton className="relative flex items-center justify-center rounded-full bg-blue-600 text-white text-lg font-bold h-10 w-10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
-                        {userInitials}
-                        <span className="sr-only">Open user settings</span>
+                  {userInitials}
+                  <span className="sr-only">Open user settings</span>
                       </MenuButton>
-                    </div>
+              </div>
 
                     <MenuItems className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                       <MenuItem 
@@ -171,95 +171,100 @@ export default function Dashboard() {
                       </MenuItem>
                     </MenuItems>
                   </Menu>
-                </div>
-              </div>
             </div>
-
-            {/* Mobile navigation options */}
-            <DisclosurePanel className="sm:hidden">
-              <div className="flex flex-col space-y-2 p-2">
-                {navigation.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className={classNames(
-                      item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                      'block rounded-md px-3 py-2 text-sm font-medium'
-                    )}
-                  >
-                    {item.name}
-                  </a>
-                ))}
-              </div>
-            </DisclosurePanel>
-      </Disclosure>
-
-      <div className="relative flex flex-col justify-center items-center flex-grow bg-gray-100">
-        {/* Activity Type Toggles */}
-        <div className="absolute top-4 right-4 z-10 p-4 bg-white rounded-md shadow-lg space-y-2 ">
-          <h3 className="font-semibold text-lg">Moving Activity</h3>
-          {activityTypes.map(({ name, show: [show, setShow] }) => (
-            <div key={name}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={show}
-                  onChange={() => setShow(!show)}
-                />
-                <span className="ml-2">{name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}</span>
-              </label>
-              <br />
-            </div>
-          ))}
-          <hr className="my-2" />
-          <h3 className="font-semibold text-lg">Edge Nodes</h3>
-          <div className="flex items-center space-x-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showStaticMarkers}
-                onChange={() => setShowStaticMarkers(!showStaticMarkers)}
-              />
-              <span className="ml-2">Show Static Markers</span>
-            </label>
           </div>
         </div>
 
-        <div className="h-full w-full">
-          <MapContainer center={position} zoom={14} className="h-full w-full z-0">
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-
-            {/* Markers for each activity */}
-            {activityTypes.map(({ name, show: [show] }) =>
-              show && data?.positions
-                ?.filter((pos) => pos.movingActivity === name)
-                .map((pos) => (
-                  <Marker
-                    key={pos.id}
-                    position={[pos.latitude, pos.longitude]}
-                    icon={markerIcon}
-                  >
-                    <Popup>{`${userName} was ${pos.movingActivity} at ${new Date(pos.createdAt).toLocaleString()}`}</Popup>
-                  </Marker>
-                ))
-            )}
-
-            {/* Render static markers conditionally */}
-            {showStaticMarkers && staticMarkers.map((marker, index) => (
-              <Marker
-                key={index}
-                position={marker.geocode}
-                icon={nodeIcon}
+        {/* Mobile navigation options */}
+        <DisclosurePanel className="sm:hidden">
+          <div className="flex flex-col space-y-2 p-2">
+            {navigation.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                className={classNames(
+                  item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
+                  'block rounded-md px-3 py-2 text-sm font-medium'
+                )}
               >
-                <Popup>{marker.popUp}</Popup>
-              </Marker>
+                {item.name}
+              </a>
             ))}
-          </MapContainer>
+          </div>
+        </DisclosurePanel>
+      </Disclosure>
+
+      <div className="relative flex flex-col justify-center items-center flex-grow bg-gray-100">
+        <MapContainer center={position} zoom={14} className="w-full h-full relative z-0">
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+          />
+          {data?.positions.map(({ userId, latitude, longitude, movingActivity, createdAt }) => {
+            const timestamp = parseInt(createdAt) * 1000;
+
+            return (
+              activityTypes.find(({ name }) => name === movingActivity)?.show[0] ? (
+                <Marker key={userId} position={[latitude, longitude]} icon={markerIcon}>
+                  <Popup>
+                    {`User ID: ${userId}`}<br />
+                    {`Activity: ${movingActivity}`}<br />
+                    {`Time: ${timestamp ? new Date(timestamp).toLocaleString() : 'N/A'}`}
+                  </Popup>
+                </Marker>
+              ) : null
+            );
+          })}
+          {showStaticMarkers && staticMarkers.map(({ geocode, popUp }) => (
+            <Marker key={popUp} position={geocode} icon={nodeIcon}>
+              <Popup>{popUp}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+
+        {/* Clickable button over the map */}
+        <div className="flex flex-col items-end absolute top-4 right-4 z-10">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)} // Toggle dropdown visibility
+            className="bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-md hover:bg-blue-500 focus:outline-none w-32" // Added w-32 for fixed width
+          >
+            Filters
+          </button>
+          {dropdownOpen && ( // Conditional rendering of the dropdown menu
+            <div className="mt-2 bg-white rounded-md shadow-lg min-w-[128px]">
+              <div className="p-2">
+                <h3 className="font-semibold text-lg">Moving Activity</h3>
+                {activityTypes.map(({ name, show: [show, setShow] }) => (
+                  <div key={name}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={show}
+                        onChange={() => setShow(!show)}
+                      />
+                      <span className="ml-2">{name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}</span>
+                    </label>
+                  </div>
+                ))}
+                <div className="border-t mt-2 pt-2">
+                  <h3 className="font-semibold text-lg">Edge Nodes</h3>
+                  <div className="flex items-center space-x-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={showStaticMarkers}
+                        onChange={() => setShowStaticMarkers(!showStaticMarkers)}
+                      />
+                      <span className="ml-2">Markers</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
     </div>
   );
 }
