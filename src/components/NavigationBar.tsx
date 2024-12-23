@@ -2,20 +2,21 @@ import { Disclosure, Menu } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
-interface NavigationBarProps {
-  userName: string;
+interface NavigationItem {
+  name: string;
+  href: string;
+  current: boolean;
 }
 
-export const NavigationBar = ({ userName }: NavigationBarProps) => {
+interface NavigationBarProps {
+  userName: string;
+  navigation: NavigationItem[];
+  onNavigationClick: (href: string) => void;
+}
+
+export const NavigationBar = ({ userName, navigation, onNavigationClick }: NavigationBarProps) => {
   const navigate = useNavigate();
   const userInitials = userName.substring(0, 2).toUpperCase();
-
-  const navigation = [
-    { name: 'Dashboard', href: '#', current: true },
-    { name: 'Team', href: '#', current: false },
-    { name: 'Projects', href: '#', current: false },
-    { name: 'Calendar', href: '#', current: false },
-  ];
 
   const classNames = (...classes: string[]) => {
     return classes.filter(Boolean).join(' ');
@@ -45,17 +46,16 @@ export const NavigationBar = ({ userName }: NavigationBarProps) => {
                 <div className="hidden sm:ml-6 sm:block">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <a
+                      <button
                         key={item.name}
-                        href={item.href}
+                        onClick={() => onNavigationClick(item.href)}
                         className={classNames(
                           item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                           'rounded-md px-3 py-2 text-sm font-medium'
                         )}
-                        aria-current={item.current ? 'page' : undefined}
                       >
                         {item.name}
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -68,30 +68,28 @@ export const NavigationBar = ({ userName }: NavigationBarProps) => {
                   <Menu.Items className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <Menu.Item>
                       {({ active }) => (
-                        <a
-                          href="#"
+                        <button
                           className={classNames(
                             active ? 'bg-gray-100' : '',
-                            'block px-4 py-2 text-sm text-gray-700'
+                            'block w-full text-left px-4 py-2 text-sm text-gray-700'
                           )}
                           onClick={() => navigate('/settings')}
                         >
                           Settings
-                        </a>
+                        </button>
                       )}
                     </Menu.Item>
                     <Menu.Item>
                       {({ active }) => (
-                        <a
-                          href="#"
+                        <button
                           className={classNames(
                             active ? 'bg-gray-100' : '',
-                            'block px-4 py-2 text-sm text-gray-700'
+                            'block w-full text-left px-4 py-2 text-sm text-gray-700'
                           )}
                           onClick={() => navigate('/logout')}
                         >
                           Logout
-                        </a>
+                        </button>
                       )}
                     </Menu.Item>
                   </Menu.Items>
@@ -102,16 +100,16 @@ export const NavigationBar = ({ userName }: NavigationBarProps) => {
           <Disclosure.Panel className="sm:hidden">
             <div className="flex flex-col space-y-2 p-2">
               {navigation.map((item) => (
-                <a
+                <button
                   key={item.name}
-                  href={item.href}
+                  onClick={() => onNavigationClick(item.href)}
                   className={classNames(
                     item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                    'block rounded-md px-3 py-2 text-sm font-medium'
+                    'block rounded-md px-3 py-2 text-sm font-medium text-left'
                   )}
                 >
                   {item.name}
-                </a>
+                </button>
               ))}
             </div>
           </Disclosure.Panel>
