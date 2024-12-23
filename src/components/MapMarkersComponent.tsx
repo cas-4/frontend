@@ -1,8 +1,8 @@
 import { Icon, LatLngExpression } from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import markerIconSvg from '../../assets/marker.svg';
-import nodeSvg from '../../assets/node.svg';
+import markerIconSvg from '../assets/marker.svg';
+import nodeSvg from '../assets/node.svg';
 
 interface Position {
   userId: string;
@@ -48,7 +48,12 @@ export const MapComponent = ({ positions, activityTypes, showStaticMarkers }: Ma
   ];
 
   return (
-    <MapContainer center={position} zoom={14} className="w-full h-full relative z-0">
+    <MapContainer
+      center={position}
+      zoom={14}
+      className="w-full h-full absolute top-0 left-0 right-0 bottom-0"
+      style={{ zIndex: 1 }}
+    >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
