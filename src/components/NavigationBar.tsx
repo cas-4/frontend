@@ -24,7 +24,7 @@ export const NavigationBar = ({ userName, navigation, onNavigationClick }: Navig
 
   return (
     <Disclosure as="nav" className="bg-gray-800 w-full">
-      {({ open }) => (
+      {({ open, close }) => (
         <>
           <div className="mx-auto px-2 sm:px-6 lg:px-8">
             <div className="relative flex h-16 items-center justify-between">
@@ -102,7 +102,10 @@ export const NavigationBar = ({ userName, navigation, onNavigationClick }: Navig
               {navigation.map((item) => (
                 <button
                   key={item.name}
-                  onClick={() => onNavigationClick(item.href)}
+                  onClick={() => {
+                    onNavigationClick(item.href);
+                    close();
+                  }}
                   className={classNames(
                     item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                     'block rounded-md px-3 py-2 text-sm font-medium text-left'
