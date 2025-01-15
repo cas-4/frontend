@@ -1,0 +1,12 @@
+if [ $# -eq 0 ]; then
+    echo "You must pass the version number."
+    exit 1
+fi
+
+sed -i "3s/.*/  \"version\": \"$1\",/" package.json
+sed -i "22s/.*/LABEL version=\"$1\"/" Dockerfile
+pnpm i
+git add package.json
+git add Dockerfile
+git commit -m "release: version $1"
+git tag -a "v$1" -m "Version $1"
