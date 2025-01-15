@@ -178,7 +178,12 @@ export default function Alert() {
 
       {/* Map Container */}
       <div className="flex-grow sm:ml-0">
-        <MapContainer center={position} zoom={14} className="h-full w-full">
+        <MapContainer 
+          center={position} 
+          zoom={14} 
+          className="w-full h-full absolute"
+          style={{ zIndex: 1 }}
+        >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
