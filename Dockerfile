@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm add typescript --global
-RUN pnpm add -D @types/react @types/react-dom
+RUN pnpm add -D @types/react @types/react-dom vite @vitejs/plugin-react
 RUN pnpm install --prod --frozen-lockfile
 COPY . .
 
