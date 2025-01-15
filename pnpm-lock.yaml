@@ -11,12 +11,30 @@ importers:
       '@apollo/client':
         specifier: ^3.11.5
         version: 3.11.5(@types/react@18.3.5)(graphql-ws@5.16.0(graphql@16.9.0))(graphql@16.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@eslint/js':
+        specifier: ^9.9.0
+        version: 9.9.1
+      '@graphql-codegen/cli':
+        specifier: 5.0.2
+        version: 5.0.2(@parcel/watcher@2.4.1)(@types/node@22.5.2)(graphql@16.9.0)(typescript@5.5.4)
+      '@graphql-codegen/client-preset':
+        specifier: 4.3.3
+        version: 4.3.3(graphql@16.9.0)
+      '@graphql-codegen/introspection':
+        specifier: 4.0.3
+        version: 4.0.3(graphql@16.9.0)
+      '@graphql-codegen/typescript':
+        specifier: ^4.0.9
+        version: 4.0.9(graphql@16.9.0)
       '@graphql-codegen/typescript-operations':
         specifier: ^4.2.3
         version: 4.2.3(graphql@16.9.0)
       '@graphql-codegen/typescript-react-apollo':
         specifier: ^4.3.0
         version: 4.3.0(graphql-tag@2.12.6(graphql@16.9.0))(graphql@16.9.0)
+      '@graphql-codegen/typescript-resolvers':
+        specifier: ^4.2.1
+        version: 4.2.1(graphql@16.9.0)
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.9.0)
@@ -32,18 +50,45 @@ importers:
       '@turf/turf':
         specifier: ^7.1.0
         version: 7.1.0
+      '@types/d3-scale-chromatic':
+        specifier: ^3.1.0
+        version: 3.1.0
       '@types/leaflet':
         specifier: ^1.9.12
         version: 1.9.12
       '@types/leaflet-draw':
         specifier: ^1.0.11
         version: 1.0.11
+      '@types/react':
+        specifier: ^18.3.5
+        version: 18.3.5
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.0
+      '@types/skmeans':
+        specifier: ^0.11.7
+        version: 0.11.7
+      '@vitejs/plugin-react':
+        specifier: ^4.3.1
+        version: 4.3.1(vite@5.4.2(@types/node@22.5.2))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.44)
       d3-scale-chromatic:
         specifier: ^3.1.0
         version: 3.1.0
+      eslint:
+        specifier: ^9.9.0
+        version: 9.9.1(jiti@1.21.6)
+      eslint-plugin-react-hooks:
+        specifier: ^5.1.0-rc.0
+        version: 5.1.0-rc-fb9a90fa48-20240614(eslint@9.9.1(jiti@1.21.6))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.9
+        version: 0.4.11(eslint@9.9.1(jiti@1.21.6))
+      globals:
+        specifier: ^15.9.0
+        version: 15.9.0
       graphql:
         specifier: ^16.9.0
         version: 16.9.0
@@ -80,52 +125,6 @@ importers:
       tailwindcss:
         specifier: ^3.4.10
         version: 3.4.10
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.9.0
-        version: 9.9.1
-      '@graphql-codegen/cli':
-        specifier: 5.0.2
-        version: 5.0.2(@parcel/watcher@2.4.1)(@types/node@22.5.2)(graphql@16.9.0)(typescript@5.5.4)
-      '@graphql-codegen/client-preset':
-        specifier: 4.3.3
-        version: 4.3.3(graphql@16.9.0)
-      '@graphql-codegen/introspection':
-        specifier: 4.0.3
-        version: 4.0.3(graphql@16.9.0)
-      '@graphql-codegen/typescript':
-        specifier: ^4.0.9
-        version: 4.0.9(graphql@16.9.0)
-      '@graphql-codegen/typescript-resolvers':
-        specifier: ^4.2.1
-        version: 4.2.1(graphql@16.9.0)
-      '@types/d3-scale-chromatic':
-        specifier: ^3.1.0
-        version: 3.1.0
-      '@types/react':
-        specifier: ^18.3.5
-        version: 18.3.5
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.0
-      '@types/skmeans':
-        specifier: ^0.11.7
-        version: 0.11.7
-      '@vitejs/plugin-react':
-        specifier: ^4.3.1
-        version: 4.3.1(vite@5.4.2(@types/node@22.5.2))
-      eslint:
-        specifier: ^9.9.0
-        version: 9.9.1(jiti@1.21.6)
-      eslint-plugin-react-hooks:
-        specifier: ^5.1.0-rc.0
-        version: 5.1.0-rc-fb9a90fa48-20240614(eslint@9.9.1(jiti@1.21.6))
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.9
-        version: 0.4.11(eslint@9.9.1(jiti@1.21.6))
-      globals:
-        specifier: ^15.9.0
-        version: 15.9.0
       typescript:
         specifier: ^5.5.4
         version: 5.5.4
