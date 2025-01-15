@@ -6,7 +6,6 @@ import NotFound from './pages/NotFound';
 import Logout from './pages/Logout';
 import ErrorPage from './pages/ErrorPage';
 import Alert from './pages/AlertPage';
-import GeoFencePage from './pages/GeoFencePage';
 import Dashboard from './pages/DashboardPage';
 
 const App = () => {
@@ -24,7 +23,6 @@ const App = () => {
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alert" element={<Alert />} />
-            <Route path="/geofence" element={<GeoFencePage />} />
           </Route>
         </Route>
 
