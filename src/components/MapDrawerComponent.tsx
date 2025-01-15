@@ -1,5 +1,5 @@
-import React from 'react';
-import { LatLngExpression } from 'leaflet'; 
+import React, { useRef } from 'react';
+import { LatLngExpression } from 'leaflet';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
@@ -12,12 +12,15 @@ interface MapComponentProps {
 export const MapDrawerComponent: React.FC<MapComponentProps> = ({ onGeometryCreated }) => {
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
 
+  // Refs for map and drawn items
+  const mapRef = useRef(null);
+  const drawnItemsRef = useRef<any>(null);
+
   const handleGeometryCreated = (e: any) => {
     try {
-      // Handle both polygon and other geometry types
       const layer = e.layer;
       let coords;
-      
+
       if (layer.getLatLngs) {
         // For polygons and other multi-point shapes
         coords = layer.getLatLngs()[0].map((latlng: any) => [latlng.lng, latlng.lat]);
@@ -33,6 +36,18 @@ export const MapDrawerComponent: React.FC<MapComponentProps> = ({ onGeometryCrea
     } catch (error) {
       console.error('Error processing geometry:', error);
     }
+  };
+
+  const handleEnableEdit = (e: any) => {
+    console.log('Editing enabled:', e);
+  };
+
+  const handleEditStop = (e: any) => {
+    console.log('Editing stopped:', e);
+  };
+
+  const handleDeleted = (e: any) => {
+    console.log('Shapes deleted:', e);
   };
 
   return (
