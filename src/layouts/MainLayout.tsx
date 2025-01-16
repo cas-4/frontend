@@ -25,7 +25,8 @@ export const MainLayout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', current: location.pathname === '/dashboard' },
-    { name: 'Alert', href: '/alert', current: location.pathname === '/alert' },
+    { name: 'New Alert', href: '/newalert', current: location.pathname === '/newalert' },
+    { name: 'Alerts', href: '/alerts', current: location.pathname === '/alerts' },
     { name: 'Geofence', href: '/geofence', current: location.pathname === '/geofence' }
   ];
 
