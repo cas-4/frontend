@@ -184,20 +184,27 @@ export default function Alert() {
   };
 
   const clearAll = () => {
+    // Clear the layers on the map
+    if (drawnItemsRef.current) {
+      drawnItemsRef.current.clearLayers();
+    }
+  
+    // Reset the state
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
       alertTexts: { text1: '', text2: '', text3: '' },
       coordinates: [],
       isPolygonComplete: false,
     }));
-
+  
     setAlertTexts({ text1: '', text2: '', text3: '' });
     setCoordinates([]);
     setIsPolygonComplete(false);
-
+  
     setModalMessage('Alert data cleared!');
     setModalType('info');
     setShowModal(true);
   };
+  
 
   return (
     <div className="relative flex flex-col h-full w-full mx-auto overflow-hidden">
@@ -209,10 +216,10 @@ export default function Alert() {
               <h2 className={`text-lg font-bold ${modalType === 'success' ? 'text-green-500' : modalType === 'error' ? 'text-red-500' : 'text-blue-500'}`}>{modalType === 'success' ? 'Success' : modalType === 'error' ? 'Error' : 'Info'}</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-700"
+                className="text-gray-400 hover:text-gray-700 focus:outline-none ml-2 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
                 aria-label="Close modal"
               >
-                &times;
+                <span className="text-2xl">&times;</span>
               </button>
             </div>
             <p className="mt-4 text-gray-700">{modalMessage}</p>
