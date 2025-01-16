@@ -126,7 +126,7 @@ export default function Alert() {
 
   const handleSubmit = async () => {
     if (!isPolygonComplete || isInEditMode) return;
-
+  
     try {
       const { data, errors } = await executeMutation({
         variables: {
@@ -138,19 +138,24 @@ export default function Alert() {
           },
         },
       });
-
+  
       if (errors || !data?.newAlert?.id) {
         console.error('GraphQL errors:', errors);
         throw new Error('Error creating the alert. Please try again.');
       }
-
+  
       setModalMessage('Alert created successfully!');
       setModalType('success');
       setShowModal(true);
-
+  
+      // Clear the drawn polygon from the map
+      drawnItemsRef.current.clearLayers();
+  
+      // Reset the state
       setAlertTexts({ text1: '', text2: '', text3: '' });
       setCoordinates([]);
       setIsPolygonComplete(false);
+  
     } catch (error) {
       console.error('Mutation error:', error);
       setModalMessage('Error creating the alert. Please try again.');
@@ -158,7 +163,7 @@ export default function Alert() {
       setShowModal(true);
     }
   };
-
+    
   const handleEdited = (e: EditLayersEvent) => {
     const updatedCoordinates: Point[] = [];
 
