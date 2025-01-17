@@ -6,6 +6,7 @@ import NotFound from './pages/NotFound';
 import Logout from './pages/Logout';
 import ErrorPage from './pages/ErrorPage';
 import Alert from './pages/AlertPage';
+import Alerts from './pages/AlertsListPage';
 import Dashboard from './pages/DashboardPage';
 
 const App = () => {
@@ -22,7 +23,8 @@ const App = () => {
         <Route element={<PrivateRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/alert" element={<Alert />} />
+            <Route path="/newalert" element={<Alert />} />
+            <Route path="/alerts" element={<Alerts />} />
           </Route>
         </Route>
 

@@ -55,7 +55,8 @@ export const MapDrawerComponent: React.FC<MapComponentProps> = ({ onGeometryCrea
       ref={mapRef}
       center={position}
       zoom={14}
-      className="h-full w-full"
+      className="w-full h-full relative"
+      style={{ minHeight: "500px" }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

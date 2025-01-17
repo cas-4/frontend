@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { gql, useMutation } from '@apollo/client';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
@@ -7,7 +7,6 @@ import 'leaflet-draw/dist/leaflet.draw.css';
 import L, { LatLngExpression, LayerEvent } from 'leaflet';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
 
-// GraphQL mutation
 const NEW_ALERT_MUTATION = gql`
   mutation NewAlert($input: AlertInput!) {
     newAlert(input: $input) {
@@ -18,6 +17,10 @@ const NEW_ALERT_MUTATION = gql`
 `;
 
 type Point = { latitude: number; longitude: number };
+
+interface EditLayersEvent extends L.LeafletEvent {
+  layers: L.LayerGroup;
+}
 
 const closePolygon = (points: Point[]): Point[] => {
   if (points.length === 0) return [];
@@ -34,6 +37,8 @@ const closePolygon = (points: Point[]): Point[] => {
   return points;
 };
 
+const LOCAL_STORAGE_KEY = 'alertData';
+
 export default function Alert() {
   const [executeMutation] = useMutation(NEW_ALERT_MUTATION);
 
@@ -46,9 +51,57 @@ export default function Alert() {
   const [isPolygonComplete, setIsPolygonComplete] = useState(false);
   const [isInEditMode, setIsInEditMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [showModal, setShowModal] = useState(false);
 
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
   const drawnItemsRef = useRef<L.FeatureGroup>(new L.FeatureGroup());
+
+  useEffect(() => {
+    const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setAlertTexts(parsedData.alertTexts || { text1: '', text2: '', text3: '' });
+        setCoordinates(parsedData.coordinates || []);
+        setIsPolygonComplete(parsedData.isPolygonComplete || false);
+      } catch (error) {
+        console.error('Error parsing localStorage data:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify({ alertTexts, coordinates, isPolygonComplete })
+    );
+  }, [alertTexts, coordinates, isPolygonComplete]);
+
+  useEffect(() => {
+    const restorePolygon = () => {
+      if (coordinates.length > 0 && drawnItemsRef.current) {
+        drawnItemsRef.current.clearLayers();
+
+        const latLngs = coordinates.map((point) => [point.latitude, point.longitude] as [number, number]);
+        const polygon = L.polygon(latLngs, {
+          color: '#ff0000',
+        });
+
+        drawnItemsRef.current.addLayer(polygon);
+      }
+    };
+
+    restorePolygon();
+  }, [coordinates]);
+
+  const onTextChange = (field: keyof typeof alertTexts, value: string) => {
+    setAlertTexts((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   const handleGeometryCreated = (e: LayerEvent) => {
     drawnItemsRef.current.clearLayers();
@@ -73,9 +126,9 @@ export default function Alert() {
 
   const handleSubmit = async () => {
     if (!isPolygonComplete || isInEditMode) return;
-
+  
     try {
-      await executeMutation({
+      const { data, errors } = await executeMutation({
         variables: {
           input: {
             points: coordinates,
@@ -85,114 +138,179 @@ export default function Alert() {
           },
         },
       });
+  
+      if (errors || !data?.newAlert?.id) {
+        console.error('GraphQL errors:', errors);
+        throw new Error('Error creating the alert. Please try again.');
+      }
+  
+      setModalMessage('Alert created successfully!');
+      setModalType('success');
+      setShowModal(true);
+  
+      // Clear the drawn polygon from the map
+      drawnItemsRef.current.clearLayers();
+  
+      // Reset the state
+      setAlertTexts({ text1: '', text2: '', text3: '' });
+      setCoordinates([]);
+      setIsPolygonComplete(false);
+  
     } catch (error) {
-      console.error('Error submitting the alert:', error);
+      console.error('Mutation error:', error);
+      setModalMessage('Error creating the alert. Please try again.');
+      setModalType('error');
+      setShowModal(true);
     }
   };
+    
+  const handleEdited = (e: EditLayersEvent) => {
+    const updatedCoordinates: Point[] = [];
 
-  const onTextChange = (field: keyof typeof alertTexts, value: string) => {
-    setAlertTexts({ ...alertTexts, [field]: value });
+    e.layers.eachLayer((layer) => {
+      const latLngs = (layer as L.Polygon).getLatLngs()[0] as L.LatLng[];
+      latLngs.forEach((latLng) => {
+        updatedCoordinates.push({ latitude: latLng.lat, longitude: latLng.lng });
+      });
+    });
+
+    const closedCoordinates = closePolygon(updatedCoordinates);
+
+    setCoordinates(closedCoordinates);
+
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify({
+        alertTexts,
+        coordinates: closedCoordinates,
+        isPolygonComplete: true,
+      })
+    );
   };
 
-  return (
-    <div className="relative flex flex-col md:flex-row w-full h-full">
-      {/* Header and Toggle for small screens */}
-      <div className="flex justify-between items-center md:hidden p-4 bg-gray-100 w-full">
-        <h2 className="text-xl font-semibold">Alert Information</h2>
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="focus:outline-none ml-2"
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? (
-            <ChevronUpIcon className="w-6 h-6 text-gray-700" />
-          ) : (
-            <ChevronDownIcon className="w-6 h-6 text-gray-700" />
-          )}
-        </button>
-      </div>
+  const clearAll = () => {
+    // Clear the layers on the map
+    if (drawnItemsRef.current) {
+      drawnItemsRef.current.clearLayers();
+    }
+  
+    // Reset the state
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+      alertTexts: { text1: '', text2: '', text3: '' },
+      coordinates: [],
+      isPolygonComplete: false,
+    }));
+  
+    setAlertTexts({ text1: '', text2: '', text3: '' });
+    setCoordinates([]);
+    setIsPolygonComplete(false);
+  
+    setModalMessage('Alert data cleared!');
+    setModalType('info');
+    setShowModal(true);
+  };
+  
 
-      {/* Sidebar for all screen sizes */}
-      <div
-        className={`z-50 bg-gray-100 overflow-y-auto transition-all ${
-          isMenuOpen || window.innerWidth >= 768 ? 'block' : 'hidden'
-        } md:block md:w-100 lg:w-100`}
-      >
-        <div className="p-4">
-          {/* Heading only visible on md and above */}
-          <div className="hidden md:block">
-            <h2 className="text-xl font-semibold mb-4">Alert Information</h2>
+  return (
+    <div className="relative flex flex-col h-full w-full mx-auto overflow-hidden">
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+          <div className={`bg-white p-6 rounded-lg overflow-hidden shadow-lg shadow-xl transform transition-all ${modalType === 'success' ? 'border-green-500' : modalType === 'error' ? 'border-red-500' : 'border-blue-500'} border-2`}>
+            <div className="flex items-center justify-between">
+              <h2 className={`text-lg font-bold ${modalType === 'success' ? 'text-green-500' : modalType === 'error' ? 'text-red-500' : 'text-blue-500'}`}>{modalType === 'success' ? 'Success' : modalType === 'error' ? 'Error' : 'Info'}</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-700 focus:outline-none ml-2 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
+                aria-label="Close modal"
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+            <p className="mt-4 text-gray-700">{modalMessage}</p>
           </div>
-          <div>
-            <div className="mb-4">
-              <label className="block mb-2">Alert Level 1</label>
-              <textarea
-                value={alertTexts.text1}
-                onChange={(e) => onTextChange('text1', e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Enter first level alert text"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">Alert Level 2</label>
-              <textarea
-                value={alertTexts.text2}
-                onChange={(e) => onTextChange('text2', e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Enter second level alert text"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block mb-2">Alert Level 3</label>
-              <textarea
-                value={alertTexts.text3}
-                onChange={(e) => onTextChange('text3', e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Enter third level alert text"
-              />
-            </div>
+        </div>
+      )}
+
+      <div className="h-full flex flex-col md:flex-row">
+        <div className="md:hidden z-20 bg-white shadow-md">
+          <div className="p-4 flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Alert Information</h2>
             <button
-              onClick={handleSubmit}
-              disabled={
-                !isPolygonComplete ||
-                isInEditMode ||
-                !alertTexts.text1 ||
-                !alertTexts.text2 ||
-                !alertTexts.text3
-              }
-              className={`w-full p-2 rounded ${
-                isPolygonComplete &&
-                !isInEditMode &&
-                alertTexts.text1 &&
-                alertTexts.text2 &&
-                alertTexts.text3
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="focus:outline-none ml-2"
+              aria-label="Toggle menu"
             >
-              Create Alert
+              {isMenuOpen ? (
+                <ChevronUpIcon className="w-6 h-6 text-gray-700" />
+              ) : (
+                <ChevronDownIcon className="w-6 h-6 text-gray-700" />
+              )}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Map Container */}
-      <div className="flex-grow sm:ml-0">
-        <MapContainer 
-          center={position} 
-          zoom={14} 
-          className="w-full h-full absolute"
-          style={{ zIndex: 1 }}
+        <div
+          className={`z-1 bg-white md:bg-gray-100 md:w-96 flex-shrink-0 ${
+            isMenuOpen ? 'block' : 'hidden'
+          } md:block md:h-full flex flex-col`}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
-          <FeatureGroup ref={drawnItemsRef}>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4">
+              <div className="hidden md:block">
+                <h2 className="text-xl font-semibold mb-4">Alert Information</h2>
+              </div>
+
+              {(['text1', 'text2', 'text3'] as (keyof typeof alertTexts)[]).map((field, index) => (
+                <div className="mb-4" key={field}>
+                  <label className="block mb-2">Alert Level {index + 1}</label>
+                  <textarea
+                    value={alertTexts[field]}
+                    onChange={(e) => onTextChange(field, e.target.value)}
+                    className="w-full p-2 border rounded"
+                    placeholder={`Enter level ${index + 1} alert text`}
+                  />
+                </div>
+              ))}
+
+              <button
+                onClick={handleSubmit}
+                disabled={!isPolygonComplete || isInEditMode || !alertTexts.text1 || !alertTexts.text2 || !alertTexts.text3}
+                className={`w-full p-2 rounded ${
+                  isPolygonComplete && !isInEditMode && alertTexts.text1 && alertTexts.text2 && alertTexts.text3
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Create Alert
+              </button>
+
+              <button
+                onClick={clearAll}
+                className="mt-4 w-full bg-red-500 text-white p-2 rounded hover:bg-red-600"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="z-0 flex-grow relative h-[calc(100vh-64px)] md:h-full">
+          <MapContainer 
+            center={position} 
+            zoom={14} 
+            className="w-full h-full"
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            <FeatureGroup ref={drawnItemsRef}>
             <EditControl
               position="topright"
               onCreated={handleGeometryCreated}
               onDeleted={handleDeleted}
+              onEdited={handleEdited}
               draw={{
                 polygon: {
                   allowIntersection: false,
@@ -210,9 +328,10 @@ export default function Alert() {
                 marker: false,
                 circlemarker: false,
               }}
-            />
-          </FeatureGroup>
-        </MapContainer>
+            />;
+            </FeatureGroup>
+          </MapContainer>
+        </div>
       </div>
     </div>
   );
