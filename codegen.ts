@@ -1,10 +1,6 @@
 import type { CodegenConfig } from '@graphql-codegen/cli';
 
-const apiUrl = import.meta.env.VITE_API_URL;
-
-if (!apiUrl) {
-  throw new Error('VITE_API_URL is not defined. Check your .env file.');
-}
+const apiUrl = "http://cas-sanluca.lab.students.cs.unibo.it:3000/api"
 
 const config: CodegenConfig = {
   overwrite: true,
