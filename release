@@ -4,7 +4,7 @@ if [ $# -eq 0 ]; then
 fi
 
 sed -i "3s/.*/  \"version\": \"$1\",/" package.json
-sed -i "26s/.*/LABEL version=\"$1\"/" Dockerfile
+sed -i "28s/.*/LABEL version=\"$1\"/" Dockerfile
 pnpm i
 git add package.json
 git add Dockerfile

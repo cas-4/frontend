@@ -17,6 +17,8 @@ RUN pnpm install --prod --frozen-lockfile
 COPY . .
 
 # Build the frontend application
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm run build
 
 # Production stage
