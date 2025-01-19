@@ -6,9 +6,10 @@ import NotFound from './pages/NotFound';
 import Logout from './pages/Logout';
 import ErrorPage from './pages/ErrorPage';
 import Alert from './pages/AlertPage';
+import Alerts from './pages/AlertsListPage';
 import Dashboard from './pages/DashboardPage';
 
-const App = () => {
+export default function App() {
   return (
     <Router>
       <Routes>
@@ -23,6 +24,7 @@ const App = () => {
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/newalert" element={<Alert />} />
+            <Route path="/alerts" element={<Alerts />} />
           </Route>
         </Route>
 
@@ -30,5 +32,3 @@ const App = () => {
     </Router>
   );
 };
-
-export default App;
