@@ -20,27 +20,33 @@ interface MapComponentProps {
     show: [boolean, (value: boolean) => void];
   }>;
   showStaticMarkers: boolean;
+  isRefreshing: boolean;
 }
 
-export const MapComponent = ({ positions, activityTypes, showStaticMarkers }: MapComponentProps) => {
+export const MapComponent = ({ 
+  positions, 
+  activityTypes, 
+  showStaticMarkers,
+  isRefreshing 
+}: MapComponentProps) => {
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
 
   const markerIcon = new Icon({
     iconUrl: markerIconSvg,
     iconSize: [30, 30],
-    className: 'marker-icon'
+    className: `marker-icon ${isRefreshing ? 'opacity-50' : ''}`
   });
 
   const nodeIcon = new Icon({
     iconUrl: nodeSvg,
     iconSize: [30, 30],
-    className: 'node-icon'
+    className: `node-icon ${isRefreshing ? 'opacity-50' : ''}`
   });
 
   const carIcon = new Icon({
     iconUrl: carSvg,
     iconSize: [30, 30],
-    className: 'car-icon'
+    className: `car-icon ${isRefreshing ? 'opacity-50' : ''}`
   });
 
   const staticMarkers = [
