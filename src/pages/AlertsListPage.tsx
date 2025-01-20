@@ -99,7 +99,7 @@ export default function AlertsListPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center w-full h-full">
+      <div className="flex items-center justify-center w-full h-full min-h-[400px]">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -107,7 +107,7 @@ export default function AlertsListPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center w-full h-full">
+      <div className="flex items-center justify-center w-full h-full min-h-[400px]">
         <div className="text-red-600">
           Error loading alerts. Please try refreshing the page.
         </div>
@@ -115,41 +115,70 @@ export default function AlertsListPage() {
     );
   }
 
-return (
-  <div className="min-h-screen">
-    <div className="p-4 lg:p-8 space-y-6 max-w-5xl mx-auto">
-      <div className="space-y-6">
-        {data?.alerts.map((alert) => (
-          <div
-            key={alert.id}
-            className="bg-gray-700 text-white rounded-lg shadow-md overflow-hidden"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:gap-4">
-              <div className="p-6">
-                <div className="font-semibold text-xl lg:mb-4">Alert #{alert.id}</div> {/* Made title bigger and added margin */}
-                <div className="text-gray-300"> {/* Changed from text-sm to text-base */}
-                  User ID: {alert.userId}
+  if (!data?.alerts || data.alerts.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <div className="p-4 lg:p-8 max-w-5xl mx-auto">
+          <div className="bg-gray-700 text-white rounded-lg shadow-md p-8 text-center">
+            <svg 
+              className="w-16 h-16 mx-auto mb-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+            <h2 className="text-xl font-semibold mb-2">No Alerts Found</h2>
+            <p className="text-gray-300 mb-4">There are currently no alerts in the system.</p>
+            <p className="text-gray-400 text-sm">
+              New alerts will appear here when they are created.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <div className="p-4 lg:p-8 space-y-6 max-w-5xl mx-auto">
+        <div className="space-y-6">
+          {data.alerts.map((alert) => (
+            <div
+              key={alert.id}
+              className="bg-gray-700 text-white rounded-lg shadow-md overflow-hidden"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:gap-4">
+                <div className="p-6">
+                  <div className="font-semibold text-xl lg:mb-4">Alert #{alert.id}</div>
+                  <div className="text-gray-300">
+                    User ID: {alert.userId}
+                  </div>
+                  <div className="text-gray-300">
+                    Date: {new Date(alert.createdAt * 1000).toLocaleString()}
+                  </div>
+                  <div className="text-gray-300">
+                    Reached Users: {alert.reachedUsers}
+                  </div>
+                  <div className="lg:mt-4 lg:space-y-2">
+                    <div>Level 1: {alert.text1}</div>
+                    <div>Level 2: {alert.text2}</div>
+                    <div>Level 3: {alert.text3}</div>
+                  </div>
                 </div>
-                <div className="text-gray-300">
-                  Date: {new Date(alert.createdAt * 1000).toLocaleString()}
+                <div className="h-[400px]">
+                  <AlertMap alert={alert} />
                 </div>
-                <div className="text-gray-300">
-                  Reached Users: {alert.reachedUsers}
-                </div>
-                <div className="lg:mt-4 lg:space-y-2"> {/* Added more vertical spacing */}
-                  <div>Level 1: {alert.text1}</div>
-                  <div>Level 2: {alert.text2}</div>
-                  <div>Level 3: {alert.text3}</div>
-                </div>
-              </div>
-              <div className="h-[400px]"> {/* Increased map container height from 300px to 400px */}
-                <AlertMap alert={alert} />
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
