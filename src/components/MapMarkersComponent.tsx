@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIconSvg from '../assets/marker.svg';
 import nodeSvg from '../assets/node.svg';
+import carSvg from '../assets/car.svg';
 
 interface Position {
   userId: string;
@@ -36,6 +37,12 @@ export const MapComponent = ({ positions, activityTypes, showStaticMarkers }: Ma
     className: 'node-icon'
   });
 
+  const carIcon = new Icon({
+    iconUrl: carSvg,
+    iconSize: [30, 30],
+    className: 'car-icon'
+  });
+
   const staticMarkers = [
     {
       geocode: [44.4970183, 11.3562014] as LatLngExpression,
@@ -46,6 +53,13 @@ export const MapComponent = ({ positions, activityTypes, showStaticMarkers }: Ma
       popUp: 'Towers of Bologna',
     },
   ];
+
+  const getIconForActivity = (activity: string) => {
+    if (activity === 'IN_VEHICLE') {
+      return carIcon;
+    }
+    return markerIcon;
+  };
 
   return (
     <MapContainer
@@ -62,7 +76,11 @@ export const MapComponent = ({ positions, activityTypes, showStaticMarkers }: Ma
         const timestamp = parseInt(createdAt) * 1000;
         return (
           activityTypes.find(({ name }) => name === movingActivity)?.show[0] ? (
-            <Marker key={userId} position={[latitude, longitude]} icon={markerIcon}>
+            <Marker 
+              key={userId} 
+              position={[latitude, longitude]} 
+              icon={getIconForActivity(movingActivity)}
+            >
               <Popup>
                 {`User ID: ${userId}`}<br />
                 {`Activity: ${movingActivity}`}<br />
