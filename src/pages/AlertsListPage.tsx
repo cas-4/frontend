@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client';
 import { MapContainer, TileLayer, Polygon, useMap} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 interface Alert {
   id: number;
@@ -70,7 +70,7 @@ const AlertMap = ({ alert }: { alert: Alert }) => {
   const center = bounds.getCenter();
 
   return (
-    <div className="h-[300px] w-full">
+    <div className="h-full w-full">
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={12}
@@ -115,40 +115,41 @@ export default function AlertsListPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen">
-      <div className="container mx-auto p-4 space-y-6">
-        <h2 className="text-xl font-bold mb-4 text-white">Alerts</h2>
-        <div className="space-y-6">
-          {data?.alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className="bg-gray-700 text-white rounded-lg shadow-md overflow-hidden"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4">
-                  <div className="font-semibold">Alert #{alert.id}</div>
-                  <div className="text-sm text-gray-300">
-                    User ID: {alert.userId}
-                  </div>
-                  <div className="text-sm text-gray-300">
-                    Date: {new Date(alert.createdAt * 1000).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-300">
-                    Reached Users: {alert.reachedUsers}
-                  </div>
-                  <div className="mt-2">
-                    <div>Level 1: {alert.text1}</div>
-                    <div>Level 2: {alert.text2}</div>
-                    <div>Level 3: {alert.text3}</div>
-                  </div>
+return (
+  <div className="min-h-screen">
+    <div className="p-4 lg:p-8 space-y-6 max-w-5xl mx-auto">
+      <div className="space-y-6">
+        {data?.alerts.map((alert) => (
+          <div
+            key={alert.id}
+            className="bg-gray-700 text-white rounded-lg shadow-md overflow-hidden"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:gap-4">
+              <div className="p-6">
+                <div className="font-semibold text-xl lg:mb-4">Alert #{alert.id}</div> {/* Made title bigger and added margin */}
+                <div className="text-gray-300"> {/* Changed from text-sm to text-base */}
+                  User ID: {alert.userId}
                 </div>
+                <div className="text-gray-300">
+                  Date: {new Date(alert.createdAt * 1000).toLocaleString()}
+                </div>
+                <div className="text-gray-300">
+                  Reached Users: {alert.reachedUsers}
+                </div>
+                <div className="lg:mt-4 lg:space-y-2"> {/* Added more vertical spacing */}
+                  <div>Level 1: {alert.text1}</div>
+                  <div>Level 2: {alert.text2}</div>
+                  <div>Level 3: {alert.text3}</div>
+                </div>
+              </div>
+              <div className="h-[400px]"> {/* Increased map container height from 300px to 400px */}
                 <AlertMap alert={alert} />
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
-  );
+  </div>
+);
 }
