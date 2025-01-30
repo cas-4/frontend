@@ -3,7 +3,7 @@ import { NavigationBar } from '../components/NavigationBar';
 import { gql, useQuery } from '@apollo/client';
 
 const USER_NAME_QUERY = gql`
-  query getUserName($userId: ID!) {
+  query getUserName($userId: Int!) {
     user(id: $userId) {
       name
     }

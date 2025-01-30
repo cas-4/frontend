@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { SettingsForm } from '../components/SettingsForm';
 
 const USER_NAME_QUERY = gql`
-  query getUserName($userId: Int!) {
+  query getUserInfos($userId: Int!) {
     user(id: $userId) {
       email
       name
