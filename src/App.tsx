@@ -8,7 +8,7 @@ import ErrorPage from './pages/ErrorPage';
 import Alert from './pages/AlertPage';
 import Alerts from './pages/AlertsListPage';
 import Dashboard from './pages/DashboardPage';
-import SettingsPage from './pages/Settings';
+import SettingsPage from './pages/SettingsPage';
 //import GeoFencePage from './pages/GeoFencePage';
 
 export default function App() {
