@@ -8,6 +8,8 @@ import ErrorPage from './pages/ErrorPage';
 import Alert from './pages/AlertPage';
 import Alerts from './pages/AlertsListPage';
 import Dashboard from './pages/DashboardPage';
+import SettingsPage from './pages/Settings';
+//import GeoFencePage from './pages/GeoFencePage';
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/newalert" element={<Alert />} />
             <Route path="/alerts" element={<Alerts />} />
+            {/* <Route path="/geofence" element={<GeoFencePage />} /> */}
+            <Route path="/settings" element={<SettingsPage/> } />
           </Route>
         </Route>
 

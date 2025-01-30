@@ -3,7 +3,7 @@ import { LatLngExpression } from 'leaflet';
 import { MapContainer, TileLayer, FeatureGroup } from 'react-leaflet';
 import { EditControl } from 'react-leaflet-draw';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css'; // Important: add leaflet-draw CSS
+import 'leaflet-draw/dist/leaflet.draw.css';
 
 interface MapComponentProps {
   onGeometryCreated: (coordinates: number[][]) => void;
