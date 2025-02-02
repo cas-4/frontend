@@ -19,6 +19,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/logout" element={<Logout />} />
         <Route path="/error" element={<ErrorPage />} />
+        <Route path="/" element={<Login />} />
         <Route path="*" element={<NotFound />} />
 
         {/* Private Routes */}
