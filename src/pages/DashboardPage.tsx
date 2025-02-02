@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gql, useQuery } from '@apollo/client';
-
 import { MapComponent } from '../components/MapMarkersComponent';
 import { FilterMenu } from '../components/FilterMenu';
+import { ClusteringControls } from '../components/ClusteringControlsComponent';
+import { kMeansClustering, findOptimalClusters} from '../utils/clustering-utils';
 
 // Define the Position type
 interface Position {
@@ -37,13 +38,14 @@ const LAST_POSITION_QUERY = gql`
 export default function Dashboard() {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [clusteringEnabled, setClusteringEnabled] = useState(false);
+  const [manualClustering, setManualClustering] = useState(false);
+  const [numberOfClusters, setNumberOfClusters] = useState(3);
 
-// Add fetchPolicy and better error handling
   const { error, data, loading, refetch } = useQuery<PositionsQueryResponse>(LAST_POSITION_QUERY, {
     fetchPolicy: 'network-only',
     onError: (error) => {
       console.error('GraphQL Error:', error);
-      // Check for specific error types
       if (error.networkError) {
         console.error('Network Error:', error.networkError);
       }
@@ -63,6 +65,32 @@ export default function Dashboard() {
   ];
 
   const [showStaticMarkers, setShowStaticMarkers] = useState(true);
+
+  const clusteredPositions = useMemo(() => {
+    if (!data?.positions || !clusteringEnabled) {
+      return data?.positions || [];
+    }
+  
+    // Create a clean array of points with just lat/long
+    const points = data.positions.map(pos => ({
+      latitude: pos.latitude,
+      longitude: pos.longitude,
+      // Preserve original data for later use
+      originalData: pos
+    }));
+    
+    const k = manualClustering 
+      ? numberOfClusters 
+      : findOptimalClusters(points);
+      
+    const clusters = kMeansClustering(points, k);
+    
+    // Add original data to the clusters for the popup info
+    return clusters.map(cluster => ({
+      centroid: cluster.centroid,
+      points: cluster.points.map(p => (p as any).originalData || p)
+    }));
+  }, [data?.positions, clusteringEnabled, manualClustering, numberOfClusters]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -126,6 +154,37 @@ export default function Dashboard() {
 
   return (
     <div className="relative w-full h-full bg-green-100">
+      <div className="w-full h-full relative">
+      <MapComponent
+        positions={clusteredPositions}
+        activityTypes={activityTypes}
+        showStaticMarkers={showStaticMarkers}
+        isRefreshing={isRefreshing}
+        clustering={{
+          enabled: clusteringEnabled,
+          automatic: !manualClustering,
+          clusterCount: numberOfClusters
+        }}
+      />
+      </div>
+
+      <div>
+        <FilterMenu
+          activityTypes={activityTypes}
+          showStaticMarkers={showStaticMarkers}
+          setShowStaticMarkers={setShowStaticMarkers}
+        />
+      </div>
+
+      <ClusteringControls
+        clusteringEnabled={clusteringEnabled}
+        setClusteringEnabled={setClusteringEnabled}
+        manualClustering={manualClustering}
+        setManualClustering={setManualClustering}
+        numberOfClusters={numberOfClusters}
+        setNumberOfClusters={setNumberOfClusters}
+      />
+
       <div className="absolute bottom-4 right-4 z-50">
         <button
           onClick={handleRefresh}
@@ -148,21 +207,6 @@ export default function Dashboard() {
           </svg>
           <span>{isRefreshing ? 'Refreshing...' : 'Refresh Markers'}</span>
         </button>
-      </div>
-      <div className="w-full h-full relative">
-        <MapComponent
-          positions={data.positions}
-          activityTypes={activityTypes}
-          showStaticMarkers={showStaticMarkers}
-          isRefreshing={isRefreshing}
-        />
-      </div>
-      <div>
-        <FilterMenu
-          activityTypes={activityTypes}
-          showStaticMarkers={showStaticMarkers}
-          setShowStaticMarkers={setShowStaticMarkers}
-        />
       </div>
     </div>
   );

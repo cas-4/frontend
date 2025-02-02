@@ -1,5 +1,5 @@
 import { Icon, LatLngExpression } from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIconSvg from '../assets/marker.svg';
 import nodeSvg from '../assets/node.svg';
@@ -13,21 +13,35 @@ interface Position {
   createdAt: string;
 }
 
+interface ClusterData {
+  centroid: {
+    latitude: number;
+    longitude: number;
+  };
+  points: Position[];
+}
+
 interface MapComponentProps {
-  positions: Position[];
+  positions: Position[] | ClusterData[];
   activityTypes: Array<{
     name: string;
     show: [boolean, (value: boolean) => void];
   }>;
   showStaticMarkers: boolean;
   isRefreshing: boolean;
+  clustering: {
+    enabled: boolean;
+    automatic: boolean;
+    clusterCount: number;
+  };
 }
 
-export const MapComponent = ({ 
-  positions, 
-  activityTypes, 
+export const MapComponent = ({
+  positions,
+  activityTypes,
   showStaticMarkers,
-  isRefreshing 
+  isRefreshing,
+  clustering,
 }: MapComponentProps) => {
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
 
@@ -71,6 +85,48 @@ export const MapComponent = ({
     return markerIcon;
   };
 
+  const renderMarkers = () => {
+    if (!clustering.enabled) {
+      return (positions as Position[]).filter(({ movingActivity }) =>
+        activityTypes.find(({ name }) => name === movingActivity)?.show[0]
+      ).map(({ userId, latitude, longitude, movingActivity, createdAt }) => (
+        <Marker
+          key={userId}
+          position={[latitude, longitude]}
+          icon={getIconForActivity(movingActivity)}
+        >
+          <Popup>
+            {`User ID: ${userId}`}<br />
+            {`Activity: ${movingActivity}`}<br />
+            {`Time: ${new Date(parseInt(createdAt) * 1000).toLocaleString()}`}
+          </Popup>
+        </Marker>
+      ));
+    }
+
+    // Handle clusters
+    return (positions as ClusterData[]).map((cluster, index) => (
+      <CircleMarker
+        key={`cluster-${index}`}
+        center={[cluster.centroid.latitude, cluster.centroid.longitude]}
+        radius={Math.max(15, Math.min(30, cluster.points.length * 2))}
+        fillColor="#3388ff"
+        color="#3388ff"
+        weight={2}
+        opacity={0.6}
+        fillOpacity={0.4}
+      >
+        <Popup>
+          <div>
+            <strong>Cluster {index + 1}</strong><br />
+            Points in cluster: {cluster.points.length}<br />
+            Activities: {Array.from(new Set(cluster.points.map(p => p.movingActivity))).join(', ')}
+          </div>
+        </Popup>
+      </CircleMarker>
+    ));
+  };
+
   return (
     <MapContainer
       center={position}
@@ -82,24 +138,7 @@ export const MapComponent = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
       />
-      {positions.map(({ userId, latitude, longitude, movingActivity, createdAt }) => {
-        const timestamp = parseInt(createdAt) * 1000;
-        return (
-          activityTypes.find(({ name }) => name === movingActivity)?.show[0] ? (
-            <Marker 
-              key={userId} 
-              position={[latitude, longitude]} 
-              icon={getIconForActivity(movingActivity)}
-            >
-              <Popup>
-                {`User ID: ${userId}`}<br />
-                {`Activity: ${movingActivity}`}<br />
-                {`Time: ${timestamp ? new Date(timestamp).toLocaleString() : 'N/A'}`}
-              </Popup>
-            </Marker>
-          ) : null
-        );
-      })}
+      {renderMarkers()}
       {showStaticMarkers && staticMarkers.map(({ geocode, popUp }) => (
         <Marker key={popUp} position={geocode} icon={nodeIcon}>
           <Popup>
