@@ -126,7 +126,7 @@ const GeoFencePage: React.FC = () => {
       </MapContainer>
 
       {/* Clustering Controls */}
-      <div className="z-50 absolute bottom-4 right-4 z-[1000] bg-white p-4 rounded-lg shadow-md w-64">
+      <div className="z-50 absolute bottom-4 right-4 bg-white p-4 rounded-lg shadow-md w-64">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="font-medium">Enable Clustering</span>
