@@ -20,7 +20,7 @@ RUN pnpm run build
 FROM nginx:stable-alpine AS production-stage
 
 LABEL org.opencontainers.image.source=https://github.com/cas-4/frontend
-LABEL version="0.5.0"
+LABEL version="0.5.1"
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
