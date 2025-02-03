@@ -1,20 +1,72 @@
 import React, { useState, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, Popup, useMapEvents } from 'react-leaflet';
 import { LatLngExpression } from 'leaflet';
 import { kMeansClustering } from '../utils/clustering-utils';
 import Legend from '../components/Legend';
 
-// Previous constants remain the same
 const BOLOGNA_CENTER: [number, number] = [44.49381, 11.33875];
 const RADIUS = 5000;
-const ZOOM_THRESHOLD = 13;
+const ZOOM_THRESHOLD = 12;
 
 interface Position {
   latitude: number;
   longitude: number;
 }
 
-// Function to generate random markers within radius of Bologna
+// Function to compute the convex hull using Graham Scan algorithm
+function computeConvexHull(points: Position[]): Position[] {
+  if (points.length < 3) return points;
+
+  // Find the point with the lowest y-coordinate (and leftmost if tied)
+  let bottomPoint = points.reduce((lowest, current) => {
+    if (current.latitude < lowest.latitude || 
+       (current.latitude === lowest.latitude && current.longitude < lowest.longitude)) {
+      return current;
+    }
+    return lowest;
+  }, points[0]);
+
+  // Sort points by polar angle with respect to bottom point
+  let sortedPoints = points
+    .filter(p => p !== bottomPoint)
+    .sort((a, b) => {
+      let angleA = Math.atan2(a.latitude - bottomPoint.latitude, a.longitude - bottomPoint.longitude);
+      let angleB = Math.atan2(b.latitude - bottomPoint.latitude, b.longitude - bottomPoint.longitude);
+      if (angleA < angleB) return -1;
+      if (angleA > angleB) return 1;
+      return 0;
+    });
+
+  // Initialize stack with first three points
+  let hull: Position[] = [bottomPoint];
+  sortedPoints.forEach(point => {
+    while (
+      hull.length >= 2 &&
+      !isLeftTurn(
+        hull[hull.length - 2],
+        hull[hull.length - 1],
+        point
+      )
+    ) {
+      hull.pop();
+    }
+    hull.push(point);
+  });
+
+  // Add the first point again to close the polygon
+  hull.push(bottomPoint);
+  return hull;
+}
+
+// Helper function to determine if three points make a left turn
+function isLeftTurn(p1: Position, p2: Position, p3: Position): boolean {
+  return (
+    (p2.longitude - p1.longitude) * (p3.latitude - p1.latitude) -
+    (p2.latitude - p1.latitude) * (p3.longitude - p1.longitude)
+  ) > 0;
+}
+
+// Rest of the utility functions remain the same
 const generateRandomMarkers = (count: number): Position[] => {
   const markers: Position[] = [];
   for (let i = 0; i < count; i++) {
@@ -30,14 +82,13 @@ const generateRandomMarkers = (count: number): Position[] => {
   return markers;
 };
 
-// Color scale based on cluster size
 const getColor = (count: number, maxCount: number): string => {
   const colors = [
-    '#fee5d9', // smallest
+    '#fee5d9',
     '#fcae91',
     '#fb6a4a',
     '#de2d26',
-    '#a50f15'  // largest
+    '#a50f15'
   ];
   
   const index = Math.min(
@@ -47,7 +98,6 @@ const getColor = (count: number, maxCount: number): string => {
   return colors[index];
 };
 
-// Component to handle zoom level state
 const ZoomHandler: React.FC<{ onZoomChange: (zoom: number) => void }> = ({ onZoomChange }) => {
   const map = useMapEvents({
     zoomend: () => {
@@ -65,15 +115,20 @@ const GeoFencePage: React.FC = () => {
   const [currentZoom, setCurrentZoom] = useState(13);
   const [showLegend, setShowLegend] = useState(true);
 
-  const clusters = useMemo(() => {
+  const clustersWithHulls = useMemo(() => {
     if (!clusteringEnabled) return [];
-    return kMeansClustering(markers, manualClustering ? numberOfClusters : 5);
+    const clusters = kMeansClustering(markers, manualClustering ? numberOfClusters : 5);
+    
+    return clusters.map(cluster => ({
+      ...cluster,
+      hull: computeConvexHull(cluster.points)
+    }));
   }, [markers, clusteringEnabled, manualClustering, numberOfClusters]);
 
   const maxClusterSize = useMemo(() => {
-    if (clusters.length === 0) return 0;
-    return Math.max(...clusters.map(cluster => cluster.points.length));
-  }, [clusters]);
+    if (clustersWithHulls.length === 0) return 0;
+    return Math.max(...clustersWithHulls.map(cluster => cluster.points.length));
+  }, [clustersWithHulls]);
 
   const showIndividualMarkers = currentZoom > ZOOM_THRESHOLD;
 
@@ -101,17 +156,19 @@ const GeoFencePage: React.FC = () => {
           </Marker>
         ))}
 
-        {clusteringEnabled && clusters.map((cluster, idx) => {
+        {clusteringEnabled && clustersWithHulls.map((cluster, idx) => {
           const color = getColor(cluster.points.length, maxClusterSize);
+          const positions = cluster.hull.map(point => [point.latitude, point.longitude]) as LatLngExpression[];
+          
           return (
-            <Circle
+            <Polygon
               key={idx}
-              center={[cluster.centroid.latitude, cluster.centroid.longitude] as LatLngExpression}
-              radius={500}
+              positions={positions}
               pathOptions={{
                 color: color,
                 fillColor: color,
-                fillOpacity: 0.4
+                fillOpacity: 0.4,
+                weight: 2
               }}
             >
               <Popup>
@@ -120,12 +177,12 @@ const GeoFencePage: React.FC = () => {
                   <p>{cluster.points.length} points</p>
                 </div>
               </Popup>
-            </Circle>
+            </Polygon>
           );
         })}
       </MapContainer>
 
-      {/* Clustering Controls */}
+      {/* Controls remain the same */}
       <div className="z-50 absolute bottom-4 right-4 bg-white p-4 rounded-lg shadow-md w-64">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -178,7 +235,6 @@ const GeoFencePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Legend */}
       {clusteringEnabled && (
         <Legend 
           visible={showLegend} 

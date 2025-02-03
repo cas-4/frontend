@@ -63,11 +63,7 @@ const Legend: React.FC<{
           </div>
         ))}
       </div>
-      {showZoomInfo && (
-        <div className="mt-2 text-sm text-gray-600">
-          Zoom in past level {ZOOM_THRESHOLD} to see individual markers
-        </div>
-      )}
+      {showZoomInfo}
     </div>
   );
 };
