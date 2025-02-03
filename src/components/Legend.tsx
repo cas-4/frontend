@@ -1,13 +1,9 @@
-
-// Legend Component
 const Legend: React.FC<{ 
     visible: boolean; 
     onToggle: () => void;
     showZoomInfo?: boolean;
     zoom: number;
-}> = ({ visible, onToggle, showZoomInfo, zoom}) => {
-    
-    const ZOOM_THRESHOLD = zoom;
+}> = ({ visible, onToggle, showZoomInfo}) => {
     if (!visible) {
         return (
         <button
