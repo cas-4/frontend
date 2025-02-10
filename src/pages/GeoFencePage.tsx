@@ -1,20 +1,65 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polygon, Popup, useMapEvents } from 'react-leaflet';
-import { LatLngExpression } from 'leaflet';
-import { kMeansClustering } from '../utils/clustering-utils';
+import { LatLngExpression, Icon } from 'leaflet';
+import { 
+  kMeansClustering, 
+  Point, 
+  determineMovingActivity, 
+  generateMovement 
+} from '../utils/clustering-utils';
 import Legend from '../components/Legend';
+import markerIconSvg from '../assets/marker.svg';
+import runningSvg from '../assets/running.svg';
+import walkingSvg from '../assets/walking.svg';
+import carSvg from '../assets/car.svg';
+
+
+// Custom icons for different activities
+const activityIcons: Record<Exclude<Point['movingActivity'], undefined>, Icon> = {
+  'STILL': new Icon({
+    iconUrl: markerIconSvg,
+    iconSize: [32, 32]
+  }),
+  'WALKING': new Icon({
+    iconUrl: walkingSvg,
+    iconSize: [32, 32]
+  }),
+  'RUNNING': new Icon({
+    iconUrl: runningSvg,
+    iconSize: [32, 32]
+  }),
+  'IN_VEHICLE': new Icon({
+    iconUrl: carSvg,
+    iconSize: [32, 32]
+  })
+};
 
 const BOLOGNA_CENTER: [number, number] = [44.49381, 11.33875];
 const RADIUS = 5000;
 const ZOOM_THRESHOLD = 12;
 
-interface Position {
-  latitude: number;
-  longitude: number;
-}
+// Generate random markers with speed and activity
+const generateRandomMarkers = (count: number): Point[] => {
+  const markers: Point[] = [];
+  for (let i = 0; i < count; i++) {
+    const radiusInDeg = RADIUS / 111300;
+    const angle = Math.random() * 2 * Math.PI;
+    const r = Math.sqrt(Math.random()) * radiusInDeg;
+    
+    const speed = Math.random() * 10; // Random speed up to 10 km/h
+    
+    markers.push({
+      latitude: BOLOGNA_CENTER[0] + r * Math.cos(angle),
+      longitude: BOLOGNA_CENTER[1] + r * Math.sin(angle),
+      speed,
+      movingActivity: determineMovingActivity(speed)
+    });
+  }
+  return markers;
+};
 
-// Function to compute the convex hull using Graham Scan algorithm
-function computeConvexHull(points: Position[]): Position[] {
+// Convex hull calculation
+function computeConvexHull(points: Point[]): Point[] {
   if (points.length < 3) return points;
 
   // Find the point with the lowest y-coordinate (and leftmost if tied)
@@ -32,13 +77,11 @@ function computeConvexHull(points: Position[]): Position[] {
     .sort((a, b) => {
       let angleA = Math.atan2(a.latitude - bottomPoint.latitude, a.longitude - bottomPoint.longitude);
       let angleB = Math.atan2(b.latitude - bottomPoint.latitude, b.longitude - bottomPoint.longitude);
-      if (angleA < angleB) return -1;
-      if (angleA > angleB) return 1;
-      return 0;
+      return angleA - angleB;
     });
 
-  // Initialize stack with first three points
-  let hull: Position[] = [bottomPoint];
+  // Graham's scan algorithm
+  let hull: Point[] = [bottomPoint];
   sortedPoints.forEach(point => {
     while (
       hull.length >= 2 &&
@@ -53,42 +96,21 @@ function computeConvexHull(points: Position[]): Position[] {
     hull.push(point);
   });
 
-  // Add the first point again to close the polygon
-  hull.push(bottomPoint);
   return hull;
 }
 
-// Helper function to determine if three points make a left turn
-function isLeftTurn(p1: Position, p2: Position, p3: Position): boolean {
+// Helper function to determine left turn
+function isLeftTurn(p1: Point, p2: Point, p3: Point): boolean {
   return (
     (p2.longitude - p1.longitude) * (p3.latitude - p1.latitude) -
     (p2.latitude - p1.latitude) * (p3.longitude - p1.longitude)
   ) > 0;
 }
 
-// Rest of the utility functions remain the same
-const generateRandomMarkers = (count: number): Position[] => {
-  const markers: Position[] = [];
-  for (let i = 0; i < count; i++) {
-    const radiusInDeg = RADIUS / 111300;
-    const angle = Math.random() * 2 * Math.PI;
-    const r = Math.sqrt(Math.random()) * radiusInDeg;
-    
-    markers.push({
-      latitude: BOLOGNA_CENTER[0] + r * Math.cos(angle),
-      longitude: BOLOGNA_CENTER[1] + r * Math.sin(angle)
-    });
-  }
-  return markers;
-};
-
+// Color utility
 const getColor = (count: number, maxCount: number): string => {
   const colors = [
-    '#fee5d9',
-    '#fcae91',
-    '#fb6a4a',
-    '#de2d26',
-    '#a50f15'
+    '#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'
   ];
   
   const index = Math.min(
@@ -108,13 +130,35 @@ const ZoomHandler: React.FC<{ onZoomChange: (zoom: number) => void }> = ({ onZoo
 };
 
 const GeoFencePage: React.FC = () => {
-  const [markers] = useState<Position[]>(generateRandomMarkers(50));
+  const [markers, setMarkers] = useState<Point[]>(generateRandomMarkers(50));
   const [clusteringEnabled, setClusteringEnabled] = useState(false);
   const [manualClustering, setManualClustering] = useState(false);
   const [numberOfClusters, setNumberOfClusters] = useState(3);
   const [currentZoom, setCurrentZoom] = useState(13);
   const [showLegend, setShowLegend] = useState(true);
+  const [isAutoUpdateRunning, setIsAutoUpdateRunning] = useState(false);
 
+  // Update marker positions periodically
+  useEffect(() => {
+    if (!isAutoUpdateRunning) return;
+
+    const interval = setInterval(() => {
+      setMarkers(prevMarkers => 
+        prevMarkers.map(marker => {
+          const { dx, dy } = generateMovement(marker.movingActivity);
+          return {
+            ...marker,
+            latitude: marker.latitude + dy,
+            longitude: marker.longitude + dx
+          };
+        })
+      );
+    }, 3000); // Update every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [isAutoUpdateRunning]);
+
+  // Clustering logic
   const clustersWithHulls = useMemo(() => {
     if (!clusteringEnabled) return [];
     const clusters = kMeansClustering(markers, manualClustering ? numberOfClusters : 5);
@@ -147,18 +191,34 @@ const GeoFencePage: React.FC = () => {
 
         <ZoomHandler onZoomChange={setCurrentZoom} />
 
-        {(!clusteringEnabled || showIndividualMarkers) && markers.map((marker, idx) => (
-          <Marker
-            key={idx}
-            position={[marker.latitude, marker.longitude] as LatLngExpression}
-          >
-            <Popup>Marker {idx + 1}</Popup>
-          </Marker>
-        ))}
+        {(!clusteringEnabled || showIndividualMarkers) && markers.map((marker, idx) => {
+          // Use pre-defined icon, fallback to default if no activity determined
+          const icon = marker.movingActivity 
+            ? activityIcons[marker.movingActivity] 
+            : activityIcons['STILL'];
+
+          return (
+            <Marker
+              key={idx}
+              icon={icon}
+              position={[marker.latitude, marker.longitude] as LatLngExpression}
+            >
+              <Popup>
+                Marker {idx + 1}
+                <br />
+                Activity: {marker.movingActivity}
+                <br />
+                Speed: {marker.speed?.toFixed(2)} km/h
+              </Popup>
+            </Marker>
+          );
+        })}
 
         {clusteringEnabled && clustersWithHulls.map((cluster, idx) => {
           const color = getColor(cluster.points.length, maxClusterSize);
-          const positions = cluster.hull.map(point => [point.latitude, point.longitude]) as LatLngExpression[];
+          const positions = cluster.hull.map(point => 
+            [point.latitude, point.longitude] as LatLngExpression
+          );
           
           return (
             <Polygon
@@ -182,7 +242,7 @@ const GeoFencePage: React.FC = () => {
         })}
       </MapContainer>
 
-      {/* Controls remain the same */}
+      {/* Control Panel */}
       <div className="z-50 absolute bottom-4 right-4 bg-white p-4 rounded-lg shadow-md w-64">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -197,7 +257,6 @@ const GeoFencePage: React.FC = () => {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-
           {clusteringEnabled && (
             <>
               <div className="flex items-center justify-between">
@@ -230,8 +289,22 @@ const GeoFencePage: React.FC = () => {
                   />
                 </div>
               )}
+
             </>
           )}
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Auto Update</span>
+              <button 
+                onClick={() => setIsAutoUpdateRunning(!isAutoUpdateRunning)}
+                className={`px-3 py-1 rounded ${
+                  isAutoUpdateRunning 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-green-500 text-white'
+                }`}
+              >
+                {isAutoUpdateRunning ? 'Stop' : 'Start'}
+              </button>
+            </div>
         </div>
       </div>
 
