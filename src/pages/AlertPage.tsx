@@ -52,7 +52,7 @@ export default function Alert() {
   const [isInEditMode, setIsInEditMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [modalType, setModalType] = useState<'success' | 'error' | 'info' | ''>('');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info' | 'loading' | ''>('');
   const [showModal, setShowModal] = useState(false);
 
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
@@ -127,6 +127,11 @@ export default function Alert() {
   const handleSubmit = async () => {
     if (!isPolygonComplete || isInEditMode) return;
   
+    // Show loading modal
+    setModalMessage('Creating alert... Please wait.');
+    setModalType('loading');
+    setShowModal(true);
+  
     try {
       const { data, errors } = await executeMutation({
         variables: {
@@ -146,7 +151,6 @@ export default function Alert() {
   
       setModalMessage('Alert created successfully!');
       setModalType('success');
-      setShowModal(true);
   
       // Clear the drawn polygon from the map
       drawnItemsRef.current.clearLayers();
@@ -160,7 +164,6 @@ export default function Alert() {
       console.error('Mutation error:', error);
       setModalMessage('Error creating the alert. Please try again.');
       setModalType('error');
-      setShowModal(true);
     }
   };
     
@@ -216,18 +219,44 @@ export default function Alert() {
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-          <div className={`bg-white p-6 rounded-lg overflow-hidden shadow-lg shadow-xl transform transition-all ${modalType === 'success' ? 'border-green-500' : modalType === 'error' ? 'border-red-500' : 'border-blue-500'} border-2`}>
+          <div className={`bg-white p-6 rounded-lg overflow-hidden shadow-lg shadow-xl transform transition-all ${
+            modalType === 'success' ? 'border-green-500' : 
+            modalType === 'error' ? 'border-red-500' : 
+            modalType === 'loading' ? 'border-blue-500' :
+            'border-blue-500'
+          } border-2`}>
             <div className="flex items-center justify-between">
-              <h2 className={`text-lg font-bold ${modalType === 'success' ? 'text-green-500' : modalType === 'error' ? 'text-red-500' : 'text-blue-500'}`}>{modalType === 'success' ? 'Success' : modalType === 'error' ? 'Error' : 'Info'}</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-700 focus:outline-none ml-2 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
-                aria-label="Close modal"
-              >
-                <span className="text-2xl">&times;</span>
-              </button>
+              <h2 className={`text-lg font-bold ${
+                modalType === 'success' ? 'text-green-500' : 
+                modalType === 'error' ? 'text-red-500' : 
+                modalType === 'loading' ? 'text-blue-500' :
+                'text-blue-500'
+              }`}>
+                {modalType === 'success' ? 'Success' : 
+                 modalType === 'error' ? 'Error' : 
+                 modalType === 'loading' ? 'Processing' :
+                 'Info'}
+              </h2>
+              {modalType !== 'loading' && (
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-gray-700 focus:outline-none ml-2 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full"
+                  aria-label="Close modal"
+                >
+                  <span className="text-2xl">&times;</span>
+                </button>
+              )}
             </div>
-            <p className="mt-4 text-gray-700">{modalMessage}</p>
+            <div className="mt-4">
+              {modalType === 'loading' ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+                  <p className="text-gray-700">{modalMessage}</p>
+                </div>
+              ) : (
+                <p className="text-gray-700">{modalMessage}</p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -278,7 +307,7 @@ export default function Alert() {
                 disabled={!isPolygonComplete || isInEditMode || !alertTexts.text1 || !alertTexts.text2 || !alertTexts.text3}
                 className={`w-full p-2 rounded ${
                   isPolygonComplete && !isInEditMode && alertTexts.text1 && alertTexts.text2 && alertTexts.text3
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -328,7 +357,7 @@ export default function Alert() {
                 marker: false,
                 circlemarker: false,
               }}
-            />;
+            />
             </FeatureGroup>
           </MapContainer>
         </div>
