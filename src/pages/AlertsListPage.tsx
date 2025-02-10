@@ -100,7 +100,7 @@ const AlertMap = ({ alert }: { alert: Alert }) => {
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={12}
-        className="h-full w-full"
+        className="h-full w-full z-0"
         zoomControl={true}
         scrollWheelZoom={false}
       >
