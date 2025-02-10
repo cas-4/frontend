@@ -1,8 +1,9 @@
 import { gql, useQuery } from '@apollo/client';
-import { MapContainer, TileLayer, Polygon, useMap} from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import L, { Icon } from 'leaflet';
 import { useEffect } from 'react';
+import markerIconSvg from '../assets/marker.svg';
 
 interface Alert {
   id: number;
@@ -15,6 +16,11 @@ interface Alert {
   text2: string;
   text3: string;
   reachedUsers: number;
+  notifications: {
+    userId: number;
+    latitude: number;
+    longitude: number;
+  }[];
 }
 
 interface AlertsQueryResponse {
@@ -34,29 +40,42 @@ const ALERTS_QUERY = gql`
       text2
       text3
       reachedUsers
+      notifications {
+        userId
+        latitude
+        longitude
+      }
     }
   }
 `;
 
 const parsePolygon = (polygonStr: string): [number, number][] => {
-  const coordinates = polygonStr
+  if (!polygonStr) return [];
+  return polygonStr
     .replace('POLYGON((', '')
     .replace('))', '')
     .split(',')
     .map(coord => {
       const [lng, lat] = coord.trim().split(' ');
       return [parseFloat(lat), parseFloat(lng)];
-    });
-  return coordinates.filter(coord => coord.length === 2) as [number, number][];
+    })
+    .filter(coord => coord.length === 2) as [number, number][];
 };
 
+const notificationIcon = new Icon({
+  iconUrl: markerIconSvg,
+  iconSize: [30, 30],
+  iconAnchor: [12, 41],
+});
+
+// Component to handle map bounds
 const BoundsHandler = ({ bounds }: { bounds: L.LatLngBounds }) => {
   const map = useMap();
   
   useEffect(() => {
     map.fitBounds(bounds, {
-      padding: [25, 25], // Reduced padding for closer zoom
-      maxZoom: 18,      // Increased maxZoom to allow closer zoom
+      padding: [25, 25],
+      maxZoom: 18,
       animate: true
     });
   }, [map, bounds]);
@@ -64,9 +83,16 @@ const BoundsHandler = ({ bounds }: { bounds: L.LatLngBounds }) => {
   return null;
 };
 
+// Updated AlertMap component
 const AlertMap = ({ alert }: { alert: Alert }) => {
-  const polygon = parsePolygon(alert.area);
-  const bounds = L.latLngBounds(polygon);
+  // Parse all polygon layers
+  const polygonArea = parsePolygon(alert.area);
+  const polygonLevel2 = parsePolygon(alert.areaLevel2);
+  const polygonLevel3 = parsePolygon(alert.areaLevel3);
+
+  // Combine all polygon coordinates to calculate bounds
+  const allCoordinates = [...polygonArea, ...polygonLevel2, ...polygonLevel3];
+  const bounds = L.latLngBounds(allCoordinates);
   const center = bounds.getCenter();
 
   return (
@@ -82,10 +108,35 @@ const AlertMap = ({ alert }: { alert: Alert }) => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Polygon
-          positions={polygon}
-          pathOptions={{ color: 'red', weight: 2 }}
-        />
+        {/* Render polygon layers with different colors */}
+        {polygonArea.length > 0 && (
+          <Polygon
+            positions={polygonArea}
+            pathOptions={{ color: 'red', weight: 2, fillOpacity: 0.2 }}
+          />
+        )}
+        {polygonLevel2.length > 0 && (
+          <Polygon
+            positions={polygonLevel2}
+            pathOptions={{ color: 'blue', weight: 2, fillOpacity: 0.2 }}
+          />
+        )}
+        {polygonLevel3.length > 0 && (
+          <Polygon
+            positions={polygonLevel3}
+            pathOptions={{ color: 'green', weight: 2, fillOpacity: 0.2 }}
+          />
+        )}
+        
+        {/* Add markers for notifications */}
+        {alert.notifications?.map((notification, index) => (
+          <Marker
+            key={`notification-${index}`}
+            position={[notification.latitude, notification.longitude]}
+            icon={notificationIcon}
+          />
+        ))}
+        
         <BoundsHandler bounds={bounds} />
       </MapContainer>
     </div>
@@ -94,6 +145,7 @@ const AlertMap = ({ alert }: { alert: Alert }) => {
 
 export default function AlertsListPage() {
   const { loading, error, data } = useQuery<AlertsQueryResponse>(ALERTS_QUERY, {
+    variables: { id: 12 }, // Hardcoded ID from the curl example
     fetchPolicy: 'network-only',
   });
 
