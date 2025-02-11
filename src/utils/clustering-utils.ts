@@ -26,6 +26,41 @@ export function calculateDistance(point1: Point, point2: Point): number {
   return R * c;
 }
 
+// Helper to check if centroids have converged
+function centroidsConverged(oldCentroids: Point[], newCentroids: Point[], tolerance: number): boolean {
+  return oldCentroids.every((oldCentroid, i) => {
+    const newCentroid = newCentroids[i];
+    const distance = calculateDistance(oldCentroid, newCentroid);
+    return distance < tolerance;
+  });
+}
+
+// Calculate weighted centroid for better precision
+function calculateWeightedCentroid(points: Point[]): Point {
+  if (points.length === 0) throw new Error("Cannot calculate centroid of empty cluster");
+  
+  const n = points.length;
+  const sum = points.reduce((acc, point) => ({
+    latitudeSum: acc.latitudeSum + point.latitude,
+    longitudeSum: acc.longitudeSum + point.longitude,
+    latitudeWeightedSum: acc.latitudeWeightedSum + (point.latitude * Math.cos(point.latitude * Math.PI / 180)),
+    longitudeWeightedSum: acc.longitudeWeightedSum + (point.longitude * Math.cos(point.latitude * Math.PI / 180)),
+    cosLatSum: acc.cosLatSum + Math.cos(point.latitude * Math.PI / 180)
+  }), {
+    latitudeSum: 0,
+    longitudeSum: 0,
+    latitudeWeightedSum: 0,
+    longitudeWeightedSum: 0,
+    cosLatSum: 0
+  });
+
+  // Use weighted average for better precision with geographical coordinates
+  return {
+    latitude: sum.latitudeSum / n,
+    longitude: sum.longitudeWeightedSum / sum.cosLatSum
+  };
+}
+
 // Calculate centroid of a cluster
 export function calculateCentroid(points: Point[]): Point {
   const sum = points.reduce((acc, point) => ({
@@ -74,70 +109,152 @@ export function generateMovement(activity: Point['movingActivity']): { dx: numbe
   };
 }
 
-// Perform k-means clustering
-export function kMeansClustering(points: Point[], k: number, maxIterations = 100): Cluster[] {
-  if (points.length === 0) return [];
+// Initialize centroids using k-means++ method
+function initializeCentroids(points: Point[], k: number): Point[] {
+  const centroids: Point[] = [];
+  const n = points.length;
+  
+  // Choose first centroid uniformly at random
+  const firstIndex = Math.floor(Math.random() * n);
+  centroids.push({ ...points[firstIndex] });
+  
+  // Array to store minimum distances
+  const minDistances = new Array(n).fill(Infinity);
+  
+  // Choose remaining centroids
+  for (let i = 1; i < k; i++) {
+    let sumSquaredDistances = 0;
+    
+    // Update minimum distances for each point
+    for (let j = 0; j < n; j++) {
+      const point = points[j];
+      const distToCentroid = calculateDistance(point, centroids[i - 1]);
+      minDistances[j] = Math.min(minDistances[j], distToCentroid);
+      sumSquaredDistances += minDistances[j] * minDistances[j];
+    }
+    
+    // Choose next centroid with probability proportional to D²
+    let rand = Math.random() * sumSquaredDistances;
+    let nextCentroidIndex = 0;
+    
+    for (let j = 0; j < n && rand > 0; j++) {
+      rand -= minDistances[j] * minDistances[j];
+      nextCentroidIndex = j;
+    }
+    
+    centroids.push({ ...points[nextCentroidIndex] });
+  }
+  
+  return centroids;
+}
+
+
+export function kMeansClustering(
+  points: Point[], 
+  k: number, 
+  maxIterations = 300,
+  tolerance = 0.0001
+): Cluster[] {
+  if (!points?.length || k <= 0) return [];
   if (points.length <= k) {
     return points.map(point => ({
-      centroid: point,
+      centroid: { ...point },
       points: [point]
     }));
   }
 
-  // Initialize centroids randomly
-  let centroids = [...points]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, k)
-    .map(point => ({ ...point }));
-
+  // Initialize using k-means++
+  let centroids = initializeCentroids(points, k);
   let clusters: Cluster[] = [];
   let iteration = 0;
-  let previousSSE = Infinity;
-
-  while (iteration < maxIterations) {
-    // Assign points to nearest centroid
+  let hasConverged = false;
+  
+  while (iteration < maxIterations && !hasConverged) {
+    // Store old centroids for convergence check
+    const oldCentroids = centroids.map(c => ({ ...c }));
+    
+    // Reset clusters
     clusters = centroids.map(centroid => ({
       centroid,
       points: []
     }));
-
-    points.forEach(point => {
+    
+    // Assign points to nearest centroid
+    for (const point of points) {
       let minDistance = Infinity;
-      let closestClusterIndex = 0;
-
-      centroids.forEach((centroid, index) => {
-        const distance = calculateDistance(point, centroid);
+      let nearestClusterIndex = 0;
+      
+      for (let i = 0; i < centroids.length; i++) {
+        const distance = calculateDistance(point, centroids[i]);
         if (distance < minDistance) {
           minDistance = distance;
-          closestClusterIndex = index;
+          nearestClusterIndex = i;
         }
-      });
-
-      clusters[closestClusterIndex].points.push(point);
-    });
-
-    // Recalculate centroids
-    const newCentroids = clusters.map(cluster =>
-      cluster.points.length > 0 ? calculateCentroid(cluster.points) : cluster.centroid
-    );
-
-    // Calculate SSE
-    const currentSSE = calculateSSE(clusters);
-
-    // Check for convergence
-    if (Math.abs(previousSSE - currentSSE) < 0.0001) {
+      }
+      
+      clusters[nearestClusterIndex].points.push(point);
+    }
+    
+    // Remove empty clusters
+    clusters = clusters.filter(cluster => cluster.points.length > 0);
+    
+    // Update centroids
+    try {
+      centroids = clusters.map(cluster => calculateWeightedCentroid(cluster.points));
+    } catch (error) {
+      console.error('Error calculating centroids:', error);
       break;
     }
-
-    previousSSE = currentSSE;
-    centroids = newCentroids;
+    
+    // Check for convergence
+    hasConverged = centroidsConverged(oldCentroids, centroids, tolerance);
+    
+    // Update cluster centroids
+    clusters.forEach((cluster, i) => {
+      cluster.centroid = centroids[i];
+    });
+    
     iteration++;
   }
 
+  // Sort clusters by size for consistency
+  clusters.sort((a, b) => b.points.length - a.points.length);
+  
+  console.log(`K-means converged after ${iteration} iterations`);
+  console.log('Final clusters:', clusters.map(c => ({
+    size: c.points.length,
+    centroid: c.centroid
+  })));
+  
   return clusters;
 }
 
-// Find optimal number of clusters using elbow method
+// Calculate cluster quality metrics
+export function calculateClusterMetrics(clusters: Cluster[]) {
+  const metrics = {
+    totalPoints: 0,
+    averageClusterSize: 0,
+    silhouetteScore: 0,
+    clusterSizes: [] as number[],
+    averageDistanceToCentroid: 0
+  };
+  
+  metrics.clusterSizes = clusters.map(c => c.points.length);
+  metrics.totalPoints = metrics.clusterSizes.reduce((a, b) => a + b, 0);
+  metrics.averageClusterSize = metrics.totalPoints / clusters.length;
+  
+  let totalDistance = 0;
+  for (const cluster of clusters) {
+    for (const point of cluster.points) {
+      totalDistance += calculateDistance(point, cluster.centroid);
+    }
+  }
+  metrics.averageDistanceToCentroid = totalDistance / metrics.totalPoints;
+  
+  return metrics;
+}
+
+// Export the findOptimalClusters function
 export function findOptimalClusters(points: Point[], maxK = 10): number {
   if (points.length <= 2) return points.length;
 

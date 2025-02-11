@@ -4,7 +4,7 @@ import { gql, useQuery } from '@apollo/client';
 import { MapComponent } from '../components/MapMarkersComponent';
 import { FilterMenu } from '../components/FilterMenu';
 import { ClusteringControls } from '../components/ClusteringControlsComponent';
-import { kMeansClustering, findOptimalClusters, calculateDistance } from '../utils/clustering-utils';
+import { kMeansClustering, calculateDistance, findOptimalClusters, calculateClusterMetrics } from '../utils/clustering-utils';
 
 // Define the Position type
 interface Position {
@@ -14,16 +14,6 @@ interface Position {
   latitude: number;
   longitude: number;
   movingActivity: string;
-}
-
-// Add new interface for clusters with radius
-interface ClusterWithRadius {
-  centroid: {
-    latitude: number;
-    longitude: number;
-  };
-  points: Position[];
-  radius: number;
 }
 
 // Define the query response type
@@ -80,21 +70,22 @@ export default function Dashboard() {
       return data?.positions || [];
     }
   
-    // Create a clean array of points with just lat/long
     const points = data.positions.map(pos => ({
       latitude: pos.latitude,
       longitude: pos.longitude,
       originalData: pos
     }));
     
-    const k = manualClustering 
-      ? numberOfClusters 
-      : findOptimalClusters(points);
-      
+    const k = manualClustering ? numberOfClusters : findOptimalClusters(points);
     const clusters = kMeansClustering(points, k);
     
-    // Transform clusters to include radius
-    const clustersWithRadius: ClusterWithRadius[] = clusters.map(cluster => {
+    // Add this logging
+    console.log('Clustering with k =', k);
+    const metrics = calculateClusterMetrics(clusters);
+    console.log('Cluster metrics:', metrics);
+  
+    // Rest of your existing transformation code
+    const clustersWithRadius = clusters.map(cluster => {
       // Calculate the maximum distance from centroid to any point in the cluster
       const maxDistance = Math.max(
         ...cluster.points.map(point => 
