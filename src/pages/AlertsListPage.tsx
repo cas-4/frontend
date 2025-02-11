@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Polygon, Marker, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import L, { Icon } from 'leaflet';
 import { useEffect } from 'react';
-import markerIconSvg from '../assets/marker.svg';
+import markerIconSvg from '../assets/markerNew.svg';
 
 interface Alert {
   id: number;
@@ -64,8 +64,7 @@ const parsePolygon = (polygonStr: string): [number, number][] => {
 
 const notificationIcon = new Icon({
   iconUrl: markerIconSvg,
-  iconSize: [30, 30],
-  iconAnchor: [12, 41],
+  iconSize: [40, 40]
 });
 
 // Component to handle map bounds
@@ -118,13 +117,13 @@ const AlertMap = ({ alert }: { alert: Alert }) => {
         {polygonLevel2.length > 0 && (
           <Polygon
             positions={polygonLevel2}
-            pathOptions={{ color: 'blue', weight: 2, fillOpacity: 0.2 }}
+            pathOptions={{ color: 'red', weight: 2, fillOpacity: 0.2 }}
           />
         )}
         {polygonLevel3.length > 0 && (
           <Polygon
             positions={polygonLevel3}
-            pathOptions={{ color: 'green', weight: 2, fillOpacity: 0.2 }}
+            pathOptions={{ color: 'red', weight: 2, fillOpacity: 0.2 }}
           />
         )}
         

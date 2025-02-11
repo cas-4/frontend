@@ -17,12 +17,12 @@ export function calculateDistance(point1: Point, point2: Point): number {
   const lat2 = point2.latitude * Math.PI / 180;
   const deltaLat = (point2.latitude - point1.latitude) * Math.PI / 180;
   const deltaLon = (point2.longitude - point1.longitude) * Math.PI / 180;
-  
-  const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+
+  const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
     Math.cos(lat1) * Math.cos(lat2) *
-    Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
@@ -52,7 +52,7 @@ export function calculateSSE(clusters: Cluster[]): number {
 export function determineMovingActivity(speed: number): Point['movingActivity'] {
   if (speed === 0) return 'STILL';
   if (speed < 1.5) return 'WALKING';
-  if (speed >= 1.5 && speed < 8) return 'RUNNING';  // Increased upper bound for running
+  if (speed >= 1.5 && speed < 8) return 'RUNNING';
   return 'IN_VEHICLE';
 }
 
@@ -61,8 +61,8 @@ export function generateMovement(activity: Point['movingActivity']): { dx: numbe
   const baseMovement = {
     'STILL': 0,
     'WALKING': 0.0001,     // Approx 11 meters
-    'RUNNING': 0.001,      // Approx 110 meters (doubled from original)
-    'IN_VEHICLE': 0.005    // Approx 550 meters (2.5x faster than original)
+    'RUNNING': 0.001,      // Approx 110 meters
+    'IN_VEHICLE': 0.005    // Approx 550 meters
   };
 
   const randomFactor = () => (Math.random() - 0.5) * 2;
@@ -89,7 +89,7 @@ export function kMeansClustering(points: Point[], k: number, maxIterations = 100
     .sort(() => Math.random() - 0.5)
     .slice(0, k)
     .map(point => ({ ...point }));
-  
+
   let clusters: Cluster[] = [];
   let iteration = 0;
   let previousSSE = Infinity;
@@ -104,7 +104,7 @@ export function kMeansClustering(points: Point[], k: number, maxIterations = 100
     points.forEach(point => {
       let minDistance = Infinity;
       let closestClusterIndex = 0;
-      
+
       centroids.forEach((centroid, index) => {
         const distance = calculateDistance(point, centroid);
         if (distance < minDistance) {
@@ -112,7 +112,7 @@ export function kMeansClustering(points: Point[], k: number, maxIterations = 100
           closestClusterIndex = index;
         }
       });
-      
+
       clusters[closestClusterIndex].points.push(point);
     });
 
@@ -128,7 +128,7 @@ export function kMeansClustering(points: Point[], k: number, maxIterations = 100
     if (Math.abs(previousSSE - currentSSE) < 0.0001) {
       break;
     }
-    
+
     previousSSE = currentSSE;
     centroids = newCentroids;
     iteration++;
@@ -140,9 +140,9 @@ export function kMeansClustering(points: Point[], k: number, maxIterations = 100
 // Find optimal number of clusters using elbow method
 export function findOptimalClusters(points: Point[], maxK = 10): number {
   if (points.length <= 2) return points.length;
-  
+
   const sseValues: number[] = [];
-  
+
   // Calculate SSE for different k values
   for (let k = 1; k <= Math.min(maxK, points.length); k++) {
     const clusters = kMeansClustering(points, k);
@@ -152,11 +152,11 @@ export function findOptimalClusters(points: Point[], maxK = 10): number {
   // Find elbow point using the maximum curvature method
   let optimalK = 1;
   let maxCurvature = 0;
-  
+
   for (let i = 1; i < sseValues.length - 1; i++) {
     const angle = Math.atan2(sseValues[i] - sseValues[i + 1], 1) -
       Math.atan2(sseValues[i - 1] - sseValues[i], 1);
-    
+
     if (angle > maxCurvature) {
       maxCurvature = angle;
       optimalK = i + 1;

@@ -110,8 +110,12 @@ function isLeftTurn(p1: Point, p2: Point, p3: Point): boolean {
 // Color utility
 const getColor = (count: number, maxCount: number): string => {
   const colors = [
-    '#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'
-  ];
+    '#b22222', // Dark Red
+    '#ff8c00', // Dark Orange
+    '#3cb371', // Dark Green
+    '#008080', // Teal
+    '#4b0082'  // Indigo
+  ];  
   
   const index = Math.min(
     Math.floor((count / maxCount) * colors.length),

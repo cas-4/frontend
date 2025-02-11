@@ -4,7 +4,7 @@ import { gql, useQuery } from '@apollo/client';
 import { MapComponent } from '../components/MapMarkersComponent';
 import { FilterMenu } from '../components/FilterMenu';
 import { ClusteringControls } from '../components/ClusteringControlsComponent';
-import { kMeansClustering, findOptimalClusters} from '../utils/clustering-utils';
+import { kMeansClustering, findOptimalClusters, calculateDistance } from '../utils/clustering-utils';
 
 // Define the Position type
 interface Position {
@@ -16,12 +16,21 @@ interface Position {
   movingActivity: string;
 }
 
+// Add new interface for clusters with radius
+interface ClusterWithRadius {
+  centroid: {
+    latitude: number;
+    longitude: number;
+  };
+  points: Position[];
+  radius: number;
+}
+
 // Define the query response type
 interface PositionsQueryResponse {
   positions: Position[];
 }
 
-// Updated query with proper field selections
 const LAST_POSITION_QUERY = gql`
   query GetPositions {
     positions {
@@ -75,7 +84,6 @@ export default function Dashboard() {
     const points = data.positions.map(pos => ({
       latitude: pos.latitude,
       longitude: pos.longitude,
-      // Preserve original data for later use
       originalData: pos
     }));
     
@@ -85,11 +93,29 @@ export default function Dashboard() {
       
     const clusters = kMeansClustering(points, k);
     
-    // Add original data to the clusters for the popup info
-    return clusters.map(cluster => ({
-      centroid: cluster.centroid,
-      points: cluster.points.map(p => (p as any).originalData || p)
-    }));
+    // Transform clusters to include radius
+    const clustersWithRadius: ClusterWithRadius[] = clusters.map(cluster => {
+      // Calculate the maximum distance from centroid to any point in the cluster
+      const maxDistance = Math.max(
+        ...cluster.points.map(point => 
+          calculateDistance(
+            cluster.centroid,
+            { latitude: (point as any).originalData.latitude, longitude: (point as any).originalData.longitude }
+          )
+        )
+      );
+
+      // Add 10% buffer to ensure all points are visibly within the circle
+      const radius = maxDistance * 1.1;
+
+      return {
+        centroid: cluster.centroid,
+        points: cluster.points.map(p => (p as any).originalData),
+        radius: radius
+      };
+    });
+
+    return clustersWithRadius;
   }, [data?.positions, clusteringEnabled, manualClustering, numberOfClusters]);
 
   const handleRefresh = async () => {
@@ -103,7 +129,6 @@ export default function Dashboard() {
     }
   };
 
-  // Handle loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center w-full h-full">
@@ -112,9 +137,7 @@ export default function Dashboard() {
     );
   }
 
-  // Handle error state with more detail
   if (error) {
-    // Log detailed error information
     console.error('Detailed Error Information:', {
       message: error.message,
       networkError: error.networkError,
@@ -122,7 +145,6 @@ export default function Dashboard() {
       extraInfo: error.extraInfo,
     });
 
-    // Only navigate to error page for certain types of errors
     if (error.networkError || (error.graphQLErrors && error.graphQLErrors.length > 0)) {
       navigate('/error', { 
         state: { 
@@ -133,7 +155,6 @@ export default function Dashboard() {
       return null;
     }
 
-    // For minor errors, show error message in the dashboard
     return (
       <div className="flex items-center justify-center w-full h-full">
         <div className="text-red-600">
@@ -143,7 +164,6 @@ export default function Dashboard() {
     );
   }
 
-  // Validate data before rendering
   if (!data?.positions) {
     return (
       <div className="flex items-center justify-center w-full h-full">
@@ -155,17 +175,17 @@ export default function Dashboard() {
   return (
     <div className="relative w-full h-full bg-green-100">
       <div className="w-full h-full relative">
-      <MapComponent
-        positions={clusteredPositions}
-        activityTypes={activityTypes}
-        showStaticMarkers={showStaticMarkers}
-        isRefreshing={isRefreshing}
-        clustering={{
-          enabled: clusteringEnabled,
-          automatic: !manualClustering,
-          clusterCount: numberOfClusters
-        }}
-      />
+        <MapComponent
+          positions={clusteredPositions}
+          activityTypes={activityTypes}
+          showStaticMarkers={showStaticMarkers}
+          isRefreshing={isRefreshing}
+          clustering={{
+            enabled: clusteringEnabled,
+            automatic: !manualClustering,
+            clusterCount: numberOfClusters
+          }}
+        />
       </div>
 
       <div>
