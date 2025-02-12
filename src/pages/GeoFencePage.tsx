@@ -12,7 +12,7 @@ import markerIconSvg from '../assets/marker.svg';
 import runningSvg from '../assets/running.svg';
 import walkingSvg from '../assets/walking.svg';
 import carSvg from '../assets/car.svg';
-
+import * as turf from '@turf/turf';
 
 // Custom icons for different activities
 const activityIcons: Record<Exclude<Point['movingActivity'], undefined>, Icon> = {
@@ -58,53 +58,38 @@ const generateRandomMarkers = (count: number): Point[] => {
   return markers;
 };
 
-// Convex hull calculation
+// Compute convex hull using Turf.js
 function computeConvexHull(points: Point[]): Point[] {
   if (points.length < 3) return points;
 
-  // Find the point with the lowest y-coordinate (and leftmost if tied)
-  let bottomPoint = points.reduce((lowest, current) => {
-    if (current.latitude < lowest.latitude || 
-       (current.latitude === lowest.latitude && current.longitude < lowest.longitude)) {
-      return current;
+  const features = points.map(p => ({
+    type: 'Feature' as const,
+    properties: {},
+    geometry: {
+      type: 'Point' as const,
+      coordinates: [p.longitude, p.latitude]
     }
-    return lowest;
-  }, points[0]);
+  }));
 
-  // Sort points by polar angle with respect to bottom point
-  let sortedPoints = points
-    .filter(p => p !== bottomPoint)
-    .sort((a, b) => {
-      let angleA = Math.atan2(a.latitude - bottomPoint.latitude, a.longitude - bottomPoint.longitude);
-      let angleB = Math.atan2(b.latitude - bottomPoint.latitude, b.longitude - bottomPoint.longitude);
-      return angleA - angleB;
-    });
+  const collection = {
+    type: 'FeatureCollection' as const,
+    features
+  };
 
-  // Graham's scan algorithm
-  let hull: Point[] = [bottomPoint];
-  sortedPoints.forEach(point => {
-    while (
-      hull.length >= 2 &&
-      !isLeftTurn(
-        hull[hull.length - 2],
-        hull[hull.length - 1],
-        point
-      )
-    ) {
-      hull.pop();
-    }
-    hull.push(point);
-  });
+  try {
+    const hull = turf.convex(collection);
+    if (!hull) return points;
 
-  return hull;
-}
-
-// Helper function to determine left turn
-function isLeftTurn(p1: Point, p2: Point, p3: Point): boolean {
-  return (
-    (p2.longitude - p1.longitude) * (p3.latitude - p1.latitude) -
-    (p2.latitude - p1.latitude) * (p3.longitude - p1.longitude)
-  ) > 0;
+    // Extract coordinates from the hull polygon
+    const coordinates = hull.geometry.coordinates[0];
+    return coordinates.map(coord => ({
+      longitude: coord[0],
+      latitude: coord[1]
+    }));
+  } catch (error) {
+    console.error('Error computing convex hull:', error);
+    return points;
+  }
 }
 
 // Color utility
@@ -162,10 +147,12 @@ const GeoFencePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [isAutoUpdateRunning]);
 
-  // Clustering logic
+  // Clustering logic using Turf.js
   const clustersWithHulls = useMemo(() => {
     if (!clusteringEnabled) return [];
-    const clusters = kMeansClustering(markers, manualClustering ? numberOfClusters : 5);
+    
+    const k = manualClustering ? numberOfClusters : 5;
+    const clusters = kMeansClustering(markers, k);
     
     return clusters.map(cluster => ({
       ...cluster,
@@ -196,7 +183,6 @@ const GeoFencePage: React.FC = () => {
         <ZoomHandler onZoomChange={setCurrentZoom} />
 
         {(!clusteringEnabled || showIndividualMarkers) && markers.map((marker, idx) => {
-          // Use pre-defined icon, fallback to default if no activity determined
           const icon = marker.movingActivity 
             ? activityIcons[marker.movingActivity] 
             : activityIcons['STILL'];
@@ -239,6 +225,9 @@ const GeoFencePage: React.FC = () => {
                 <div>
                   <strong>Cluster {idx + 1}</strong>
                   <p>{cluster.points.length} points</p>
+                  {cluster.radius && (
+                    <p>Radius: {(cluster.radius).toFixed(2)} km</p>
+                  )}
                 </div>
               </Popup>
             </Polygon>
@@ -261,6 +250,7 @@ const GeoFencePage: React.FC = () => {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
+          
           {clusteringEnabled && (
             <>
               <div className="flex items-center justify-between">
@@ -293,22 +283,22 @@ const GeoFencePage: React.FC = () => {
                   />
                 </div>
               )}
-
             </>
           )}
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Auto Update</span>
-              <button 
-                onClick={() => setIsAutoUpdateRunning(!isAutoUpdateRunning)}
-                className={`px-3 py-1 rounded ${
-                  isAutoUpdateRunning 
-                    ? 'bg-red-500 text-white' 
-                    : 'bg-green-500 text-white'
-                }`}
-              >
-                {isAutoUpdateRunning ? 'Stop' : 'Start'}
-              </button>
-            </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Auto Update</span>
+            <button 
+              onClick={() => setIsAutoUpdateRunning(!isAutoUpdateRunning)}
+              className={`px-3 py-1 rounded ${
+                isAutoUpdateRunning 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-green-500 text-white'
+              }`}
+            >
+              {isAutoUpdateRunning ? 'Stop' : 'Start'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -317,7 +307,7 @@ const GeoFencePage: React.FC = () => {
           visible={showLegend} 
           onToggle={() => setShowLegend(!showLegend)}
           showZoomInfo={true}
-          zoom={13}
+          zoom={currentZoom}
         />
       )}
     </div>
