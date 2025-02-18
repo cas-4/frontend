@@ -38,18 +38,6 @@ export const MapDrawerComponent: React.FC<MapComponentProps> = ({ onGeometryCrea
     }
   };
 
-  const handleEnableEdit = (e: any) => {
-    console.log('Editing enabled:', e);
-  };
-
-  const handleEditStop = (e: any) => {
-    console.log('Editing stopped:', e);
-  };
-
-  const handleDeleted = (e: any) => {
-    console.log('Shapes deleted:', e);
-  };
-
   return (
     <MapContainer
       ref={mapRef}
@@ -66,9 +54,6 @@ export const MapDrawerComponent: React.FC<MapComponentProps> = ({ onGeometryCrea
         <EditControl
           position="topright"
           onCreated={handleGeometryCreated}
-          onEdited={handleEnableEdit}
-          onEditStop={handleEditStop}
-          onDeleted={handleDeleted}
           draw={{
             polygon: {
               allowIntersection: false,

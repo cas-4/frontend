@@ -4,7 +4,7 @@ import { gql, useQuery } from '@apollo/client';
 import { MapComponent } from '../components/MapMarkersComponent';
 import { FilterMenu } from '../components/FilterMenu';
 import { ClusteringControls } from '../components/ClusteringControlsComponent';
-import { kMeansClustering, calculateDistance, findOptimalClusters, calculateClusterMetrics } from '../utils/clustering-utils';
+import { kMeansClustering, calculateDistance, findOptimalClusters } from '../utils/clustering-utils';
 
 // Define the Position type
 interface Position {
@@ -78,11 +78,6 @@ export default function Dashboard() {
     
     const k = manualClustering ? numberOfClusters : findOptimalClusters(points);
     const clusters = kMeansClustering(points, k);
-    
-    // Add this logging
-    console.log('Clustering with k =', k);
-    const metrics = calculateClusterMetrics(clusters);
-    console.log('Cluster metrics:', metrics);
   
     // Rest of your existing transformation code
     const clustersWithRadius = clusters.map(cluster => {

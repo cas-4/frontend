@@ -2,10 +2,13 @@ import { Icon, LatLngExpression } from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { useState, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
+
 import markerIconSvg from '../assets/marker.svg';
 import nodeSvg from '../assets/node.svg';
 import carSvg from '../assets/car.svg';
-import Legend from './Legend';
+import walkingSvg from '../assets/walking.svg';
+import runningSvg from '../assets/running.svg';
+
 
 interface Position {
   userId: string;
@@ -48,6 +51,26 @@ const colorScale = [
   '#4b0082'  // Indigo
 ];
 
+// Define activity icons mapping
+const activityIcons: Record<string, Icon> = {
+  'STILL': new Icon({
+    iconUrl: markerIconSvg,
+    iconSize: [32, 32]
+  }),
+  'WALKING': new Icon({
+    iconUrl: walkingSvg,
+    iconSize: [32, 32]
+  }),
+  'RUNNING': new Icon({
+    iconUrl: runningSvg,
+    iconSize: [32, 32]
+  }),
+  'IN_VEHICLE': new Icon({
+    iconUrl: carSvg,
+    iconSize: [32, 32]
+  })
+};
+
 const getClusterColor = (pointCount: number, maxPoints: number): string => {
   if (maxPoints === 1) return colorScale[0];
   
@@ -75,26 +98,25 @@ export const MapComponent = ({
   clustering,
 }: MapComponentProps) => {
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
-  const [showLegend, setShowLegend] = useState(true);
   const [currentZoom, setCurrentZoom] = useState(14);
 
-  const markerIcon = new Icon({
-    iconUrl: markerIconSvg,
-    iconSize: [30, 30],
-    className: `marker-icon ${isRefreshing ? 'opacity-50' : ''}`
-  });
-
+  // Keep only the node icon for static markers
   const nodeIcon = new Icon({
     iconUrl: nodeSvg,
     iconSize: [30, 30],
     className: `node-icon ${isRefreshing ? 'opacity-50' : ''}`
   });
 
-  const carIcon = new Icon({
-    iconUrl: carSvg,
-    iconSize: [30, 30],
-    className: `car-icon ${isRefreshing ? 'opacity-50' : ''}`
-  });
+  const getIconForActivity = (activity: string) => {
+    const icon = activityIcons[activity];
+    if (!icon) return activityIcons['STILL']; // fallback to default marker
+    
+    // Clone the icon to add the refreshing class if needed
+    return new Icon({
+      ...icon.options,
+      className: `${icon.options.className || ''} ${isRefreshing ? 'opacity-50' : ''}`
+    });
+  };
 
   const staticMarkers = [
     {
@@ -110,13 +132,6 @@ export const MapComponent = ({
       popUp: '130.136.3.153',
     },
   ];
-
-  const getIconForActivity = (activity: string) => {
-    if (activity === 'IN_VEHICLE') {
-      return carIcon;
-    }
-    return markerIcon;
-  };
 
   const maxClusterSize = useMemo(() => {
     if (!clustering.enabled || !Array.isArray(positions)) return 1;
@@ -216,12 +231,6 @@ export const MapComponent = ({
         ))}
       </MapContainer>
       
-      <Legend 
-        visible={showLegend}
-        onToggle={() => setShowLegend(!showLegend)}
-        showZoomInfo={true}
-        zoom={currentZoom}
-      />
     </>
   );
 };
