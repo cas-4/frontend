@@ -1,6 +1,6 @@
 import { Icon, LatLngExpression } from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
-import { useState, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 
 import markerIconSvg from '../assets/marker.svg';
@@ -79,17 +79,6 @@ const getClusterColor = (pointCount: number, maxPoints: number): string => {
   return colorScale[Math.min(colorScale.length - 1, index)];
 };
 
-// MapInfo component to get current zoom level
-const MapInfo = ({ onZoomChange }: { onZoomChange: (zoom: number) => void }) => {
-  const map = useMap();
-  
-  map.on('zoomend', () => {
-    onZoomChange(map.getZoom());
-  });
-  
-  return null;
-};
-
 export const MapComponent = ({
   positions,
   activityTypes,
@@ -98,7 +87,6 @@ export const MapComponent = ({
   clustering,
 }: MapComponentProps) => {
   const position: LatLngExpression = [44.49381, 11.33875]; // Bologna
-  const [currentZoom, setCurrentZoom] = useState(14);
 
   // Keep only the node icon for static markers
   const nodeIcon = new Icon({
@@ -211,7 +199,6 @@ export const MapComponent = ({
         className="w-full h-full absolute top-0 left-0 right-0 bottom-0"
         style={{ zIndex: 1 }}
       >
-        <MapInfo onZoomChange={setCurrentZoom} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
